@@ -1,0 +1,84 @@
+# Verificarile obligatorii pentru fiecare pull request catre main.
+# Job-urile branch-name, pr-title, lint si test sunt cerute de regula de
+# protectie a branch-ului main (.github/rulesets/protect-main.json), deci un
+# PR care nu respecta conventiile nu poate fi integrat.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  branch-name:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Numele branch-ului contine cheia si titlul tichetului Jira
+        if: github.event_name == 'pull_request'
+        env:
+          BRANCH: ${{ github.head_ref }}
+        run: node scripts/check-branch-name.js "$BRANCH"
+
+  pr-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Titlul PR-ului incepe cu cheia tichetului Jira
+        if: github.event_name == 'pull_request'
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if ! printf '%s' "$TITLE" | grep -Eq '^YT-[0-9]+: .{5,}'; then
+            echo "Titlul PR-ului trebuie sa fie de forma 'YT-<nr>: <titlu tichet>'"
+            exit 1
+          fi
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: ESLint (reguli de cod)
+        run: npm run lint
+      - name: Prettier (formatare)
+        run: npm run format:check
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: campus_sports_booking_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: campus_sports_booking_test
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
