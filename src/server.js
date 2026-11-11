@@ -14,6 +14,15 @@ try {
   process.exit(1);
 }
 
-createApp().listen(env.port, () => {
+// In Express 5 eroarea de pornire (de exemplu portul ocupat) ajunge in
+// callback, nu ca exceptie, deci trebuie verificata explicit.
+createApp().listen(env.port, (err) => {
+  if (err) {
+    console.error(
+      `Serverul nu a putut porni pe portul ${env.port}: ${err.message}. ` +
+        'Opreste aplicatia care foloseste portul sau schimba PORT in .env.',
+    );
+    process.exit(1);
+  }
   console.info(`Server pornit pe http://localhost:${env.port}/api/v1`);
 });
