@@ -1,6 +1,6 @@
 # Fluxul de lucru Git și GitHub
 
-Reguli comune pentru repository-urile `campus-sports-booking-backend` și `campus-sports-booking-frontend`.
+Reguli comune pentru repository-urile [`backend`](https://github.com/YinYang00/backend) și [`frontend`](https://github.com/YinYang00/frontend) din organizația [YinYang00](https://github.com/YinYang00).
 
 ## 1. Pornirea unui tichet
 
