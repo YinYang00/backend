@@ -24,7 +24,15 @@ export default [
 
       // 3.2 Denumiri
       camelcase: ['error', { properties: 'never' }],
-      'new-cap': 'error',
+      // Router() din Express si DataTypes.X() din Sequelize sunt factory-uri,
+      // nu constructori, deci sunt permise fara new.
+      'new-cap': [
+        'error',
+        {
+          capIsNewExceptions: ['Router'],
+          capIsNewExceptionPattern: '^DataTypes\\.',
+        },
+      ],
       'id-length': ['error', { min: 2, exceptions: ['i', 'j', '_'] }],
 
       // 3.3 Expresii si control
