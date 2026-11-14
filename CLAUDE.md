@@ -2,6 +2,12 @@
 
 Serverul REST al aplicației **Campus Sports Booking** (USV): Node.js 20+, Express 5, PostgreSQL 16, Sequelize, ES modules. Repository-ul pereche este [`YinYang00/frontend`](https://github.com/YinYang00/frontend).
 
+## Început de sesiune
+
+Înainte de prima sarcină din sesiune, verifică pregătirea: skill-urile `tdd` și `code-review` (plugin-ul `mattpocock-skills`) apar în lista ta de skill-uri, uneltele Atlassian (`searchJiraIssuesUsingJql`) sunt disponibile și există `node_modules/`. Dacă lipsește oricare, citește `docs/agents/setup.md` și ghidează colegul prin pașii lipsă înainte de orice altă muncă.
+
+Apoi află tichetul Jira la care lucrează colegul, din numele branch-ului curent (`YT-<nr>-...`) sau întrebându-l. Pe `main` se lucrează doar după ce există tichetul și branch-ul lui, conform [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Comenzi
 
 ```bash
@@ -27,6 +33,23 @@ Testele șterg tabelele, de aceea rulează doar pe o bază al cărei nume se ter
 
 Testele se scriu cu skill-ul **`/tdd`** (mattpocock-skills): un test care eșuează, apoi codul minim care îl face să treacă, câte o felie verticală pe rând. Pentru backend, interfața publică testată este HTTP-ul, prin Supertest (`tests/<modul>.test.js`), nu funcțiile interne din service sau model. Fiecare rută are cel puțin un test pentru cazul reușit și unul pentru cazul de eroare.
 
+## Fluxul de lucru cu skill-uri
+
+Skill-urile marcate „colegul” pornesc doar când colegul tastează comanda; când una dintre ele se potrivește, spune-i comanda exactă de tastat. Pe celelalte le folosești singur când situația o cere.
+
+| Situația                                            | Skill                                                                  | Cine îl pornește |
+| --------------------------------------------------- | ---------------------------------------------------------------------- | ---------------- |
+| Colegul nu știe ce skill sau ce pas urmează         | `/ask-matt`                                                            | colegul          |
+| Un tichet sau o funcționalitate nouă e încă neclară | `/grill-with-docs` (scrie și `GLOSSARY.md` și ADR-urile)               | colegul          |
+| Discuția trebuie transformată în tichete Jira       | `/to-spec`, apoi `/to-tickets`                                         | colegul          |
+| Implementarea unui tichet, pe branch-ul lui         | `/implement YT-<nr>` (folosește `tdd`, apoi `code-review`)             | colegul          |
+| Cod nou sau bug reparat test-first                  | `tdd`                                                                  | Claude           |
+| Ceva e stricat, aruncă erori sau e lent             | `diagnosing-bugs`                                                      | Claude           |
+| O idee de interfață sau de logică trebuie încercată | `prototype`                                                            | Claude           |
+| Înainte de PR                                       | `code-review`, față de `main`                                          | Claude           |
+| Descrierea PR-ului                                  | șablonul `.github/pull_request_template.md`; `pr` doar pentru conținut | Claude           |
+| Sesiunea e lungă și munca trece în altă sesiune     | `/handoff`                                                             | colegul          |
+
 ## Agent skills
 
 ### Issue tracker
@@ -40,3 +63,7 @@ Cele cinci etichete canonice (`needs-triage`, `needs-info`, `ready-for-agent`, `
 ### Domain docs
 
 Single-context: `GLOSSARY.md` și `docs/adr/` în rădăcina repository-ului, plus documentația din Confluence. See `docs/agents/domain.md`.
+
+### Pregătirea mediului
+
+Plugin-uri, conectori și comenzi de instalare pentru un coleg nou. See `docs/agents/setup.md`.
