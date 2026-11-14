@@ -16,7 +16,7 @@ Dacă sesiunea nu are conectorul Atlassian, nu inventa altă variantă (GitHub I
 - **Blocking**: legătura Jira de tip `Blocks` („YT-40 blocks YT-41”). Operația de creare a legăturii se găsește cu `discover` („create issue link”). Dacă legătura nu se poate crea, pune pe primul rând din descrierea tichetului blocat: `Blocat de: YT-40, YT-41`. Un tichet este deblocat când toate tichetele care îl blochează sunt în `Done`.
 - **Comment on an issue**: `addOrEditJiraIssueComment`.
 - **Apply / remove labels**: `editJiraIssue` pe câmpul `labels`. Etichetele Jira se creează automat la prima folosire.
-- **Statusuri**: `To Do` → `In Progress` → `In Review` → `Done`, cu `transitionJiraIssue`. Treci tichetul în `In Progress` când începe lucrul, în `In Review` când PR-ul este deschis (cu link-ul PR-ului într-un comentariu) și în `Done` doar după ce PR-ul a fost integrat în `main`.
+- **Statusuri**: workflow-ul Jira are `To Do` → `In Progress` → `Done`, cu `transitionJiraIssue`. Treci tichetul în `In Progress` când începe lucrul. Când PR-ul este deschis, adaugă link-ul PR-ului într-un comentariu; tichetul rămâne în `In Progress` (statusul `In Review` din CONTRIBUTING.md nu există încă în Jira, deci nu încerca tranziția). Treci tichetul în `Done` doar după ce PR-ul a fost integrat în `main`.
 - **Close**: scrie explicația cu `addOrEditJiraIssueComment`, apoi `transitionJiraIssue` către `Done`. Un tichet abandonat primește și eticheta `wontfix`.
 
 ## Pull requests as a triage surface
