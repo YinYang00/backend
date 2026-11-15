@@ -58,6 +58,16 @@ describe('GET /utilizatori/me', () => {
     expect(res.body.cod).toBe('NEAUTENTIFICAT');
   });
 
+  it.each([
+    ['un token care nu este JWT', 'Bearer nu-e-un-token'],
+    ['un antet fara Bearer', 'Basic dXRpbGl6YXRvcjpwYXJvbGE='],
+  ])('raspunde 401 pentru %s', async (_caz, antet) => {
+    const res = await request(app).get(URL).set('Authorization', antet);
+
+    expect(res.status).toBe(401);
+    expect(res.body.cod).toBe('NEAUTENTIFICAT');
+  });
+
   it('raspunde 401 pentru un token semnat cu alt secret', async () => {
     const token = jwt.sign({ id_utilizator: 1, rol: 'Administrator' }, 'fals');
 

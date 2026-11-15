@@ -1,7 +1,10 @@
-import { verifyToken } from '../modules/auth/token.service.js';
-import { AppError } from '../utils/app-error.js';
+import {
+  createEroareNeautentificat,
+  verifyToken,
+} from '../modules/auth/token.service.js';
 
-const HTTP_UNAUTHORIZED = 401;
+/** @typedef {import('../utils/app-error.js').AppError} AppError */
+
 const PREFIX_BEARER = 'Bearer ';
 
 /**
@@ -20,11 +23,7 @@ export function autentificare(req, _res, next) {
     : '';
   const utilizator = token ? verifyToken(token) : undefined;
   if (!utilizator) {
-    throw new AppError(
-      HTTP_UNAUTHORIZED,
-      'NEAUTENTIFICAT',
-      'Autentifica-te ca sa continui.',
-    );
+    throw createEroareNeautentificat();
   }
   req.utilizator = utilizator;
   next();

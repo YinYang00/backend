@@ -3,8 +3,10 @@
 import jwt from 'jsonwebtoken';
 
 import { env } from '../../config/env.js';
+import { AppError } from '../../utils/app-error.js';
 
 const DURATA_TOKEN = '24h';
+const HTTP_UNAUTHORIZED = 401;
 
 /**
  * Datele pe care serverul le citeste dintr-un token valid.
@@ -41,6 +43,19 @@ export function createToken(utilizator) {
   return jwt.sign(toDateToken(utilizator), getSecret(), {
     expiresIn: DURATA_TOKEN,
   });
+}
+
+/**
+ * Eroarea pentru o cerere care nu vine de la un utilizator recunoscut (token
+ * lipsa, invalid, expirat sau al unui cont care nu mai exista).
+ * @returns {AppError} 401 NEAUTENTIFICAT.
+ */
+export function createEroareNeautentificat() {
+  return new AppError(
+    HTTP_UNAUTHORIZED,
+    'NEAUTENTIFICAT',
+    'Autentifica-te ca sa continui.',
+  );
 }
 
 /**

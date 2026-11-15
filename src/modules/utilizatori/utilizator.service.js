@@ -1,9 +1,9 @@
 // Datele utilizatorilor care pot iesi din server.
-import { AppError } from '../../utils/app-error.js';
+import { createEroareNeautentificat } from '../auth/token.service.js';
 
 import { Utilizator } from './utilizator.model.js';
 
-const HTTP_UNAUTHORIZED = 401;
+/** @typedef {import('../../utils/app-error.js').AppError} AppError */
 
 /**
  * Datele utilizatorului care pot iesi din server (fara hash-ul parolei).
@@ -35,11 +35,7 @@ export function toUtilizatorPublic(utilizator) {
 export async function findProfil(idUtilizator) {
   const utilizator = await Utilizator.findByPk(idUtilizator);
   if (!utilizator) {
-    throw new AppError(
-      HTTP_UNAUTHORIZED,
-      'NEAUTENTIFICAT',
-      'Autentifica-te ca sa continui.',
-    );
+    throw createEroareNeautentificat();
   }
   return toUtilizatorPublic(utilizator);
 }
