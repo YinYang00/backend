@@ -40,3 +40,14 @@ export const inregistrareBodyRules = [
         '(o litera cu diacritice ocupa doi).',
     ),
 ];
+
+// La login nu se verifica formatul: o adresa sau o parola gresita primeste
+// acelasi 401 ca orice alte date care nu se potrivesc unui cont.
+export const loginBodyRules = [
+  body('email')
+    .isString()
+    .withMessage('Campul email este obligatoriu.')
+    .trim()
+    .toLowerCase(),
+  body('parola').isString().withMessage('Campul parola este obligatoriu.'),
+];

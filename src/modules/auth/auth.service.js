@@ -1,19 +1,22 @@
-// Regulile pentru crearea conturilor. Serviciul nu cunoaste req/res: primeste
-// date simple si arunca AppError pentru situatiile prevazute.
+// Regulile pentru crearea conturilor si autentificare. Serviciul nu cunoaste
+// req/res: primeste date simple si arunca AppError pentru situatiile prevazute.
 import bcrypt from 'bcrypt';
 import { UniqueConstraintError } from 'sequelize';
 
 import { AppError } from '../../utils/app-error.js';
 import { Utilizator } from '../utilizatori/utilizator.model.js';
+import { toUtilizatorPublic } from '../utilizatori/utilizator.service.js';
+
+import { createToken } from './token.service.js';
 
 const HTTP_BAD_REQUEST = 400;
+const HTTP_UNAUTHORIZED = 401;
 const HTTP_CONFLICT = 409;
 const BCRYPT_ROUNDS = 10;
 
 /**
- * Datele utilizatorului care pot iesi din server (fara hash-ul parolei).
- * @typedef {{id_utilizator: number, nume: string, email: string,
- *   categorie: string, rol: string}} UtilizatorPublic
+ * @typedef {import('../utilizatori/utilizator.service.js').UtilizatorPublic}
+ *   UtilizatorPublic
  */
 
 // Categoria se deduce din domeniul e-mailului institutional (GLOSSARY.md).
@@ -31,21 +34,6 @@ const CATEGORIE_DUPA_DOMENIU = new Map([
 function getCategorieByEmail(email) {
   const domeniu = email.slice(email.lastIndexOf('@') + 1).toLowerCase();
   return CATEGORIE_DUPA_DOMENIU.get(domeniu);
-}
-
-/**
- * Pastreaza doar datele publice ale utilizatorului.
- * @param {Utilizator} utilizator
- * @returns {UtilizatorPublic}
- */
-function toUtilizatorPublic(utilizator) {
-  return {
-    id_utilizator: utilizator.id_utilizator,
-    nume: utilizator.nume,
-    email: utilizator.email,
-    categorie: utilizator.categorie,
-    rol: utilizator.rol,
-  };
 }
 
 /**
@@ -82,4 +70,27 @@ export async function registerUtilizator({ nume, email, parola }) {
     }
     throw err;
   }
+}
+
+/**
+ * Autentifica un utilizator dupa e-mail si parola.
+ * @param {{email: string, parola: string}} date
+ * @returns {Promise<{token: string, utilizator: UtilizatorPublic}>}
+ * @throws {AppError} 401 daca e-mailul nu are cont sau parola e gresita.
+ */
+export async function loginUtilizator({ email, parola }) {
+  const utilizator = await Utilizator.findOne({ where: { email } });
+  // Acelasi raspuns in ambele cazuri, ca sa nu se poata afla ce e-mailuri
+  // au cont.
+  if (!utilizator || !(await bcrypt.compare(parola, utilizator.parola_hash))) {
+    throw new AppError(
+      HTTP_UNAUTHORIZED,
+      'AUTENTIFICARE_ESUATA',
+      'E-mailul sau parola nu sunt corecte.',
+    );
+  }
+  return {
+    token: createToken(utilizator),
+    utilizator: toUtilizatorPublic(utilizator),
+  };
 }

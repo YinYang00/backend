@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import request from 'supertest';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '../src/app.js';
 import { Utilizator } from '../src/modules/utilizatori/utilizator.model.js';
@@ -113,6 +113,61 @@ describe('POST /auth/inregistrare', () => {
     ['e-mailul nu este valid', { ...STUDENT, email: 'andrei.student.usv.ro' }],
   ])('raspunde 400 cand %s', async (_caz, corp) => {
     const res = await request(app).post(URL).send(corp);
+
+    expect(res.status).toBe(400);
+    expect(res.body.cod).toBe('DATE_INVALIDE');
+  });
+});
+
+describe('POST /auth/login', () => {
+  const URL_LOGIN = '/api/v1/auth/login';
+
+  beforeEach(async () => {
+    await request(app).post(URL).send(STUDENT);
+  });
+
+  it('raspunde 200 cu un token si utilizatorul, fara parola', async () => {
+    const res = await request(app)
+      .post(URL_LOGIN)
+      .send({ email: STUDENT.email, parola: STUDENT.parola });
+
+    expect(res.status).toBe(200);
+    expect(res.body.token).toEqual(expect.any(String));
+    expect(res.body.utilizator).toEqual({
+      id_utilizator: 1,
+      nume: 'Andrei Popescu',
+      email: 'andrei.popescu@student.usv.ro',
+      categorie: 'Student',
+      rol: 'Utilizator',
+    });
+  });
+
+  it('raspunde la fel cu 401 pentru parola gresita si e-mail fara cont', async () => {
+    const parolaGresita = await request(app)
+      .post(URL_LOGIN)
+      .send({ email: STUDENT.email, parola: 'alta-parola' });
+    const emailFaraCont = await request(app)
+      .post(URL_LOGIN)
+      .send({ email: 'nimeni@student.usv.ro', parola: STUDENT.parola });
+
+    expect(parolaGresita.status).toBe(401);
+    expect(parolaGresita.body.cod).toBe('AUTENTIFICARE_ESUATA');
+    expect(emailFaraCont.status).toBe(401);
+    expect(emailFaraCont.body).toEqual(parolaGresita.body);
+  });
+
+  it('accepta e-mailul scris cu majuscule', async () => {
+    const res = await request(app)
+      .post(URL_LOGIN)
+      .send({ email: 'Andrei.Popescu@Student.USV.ro', parola: STUDENT.parola });
+
+    expect(res.status).toBe(200);
+  });
+
+  it('raspunde 400 cand lipseste parola', async () => {
+    const res = await request(app)
+      .post(URL_LOGIN)
+      .send({ email: STUDENT.email });
 
     expect(res.status).toBe(400);
     expect(res.body.cod).toBe('DATE_INVALIDE');

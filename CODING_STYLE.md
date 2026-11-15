@@ -147,7 +147,8 @@ src/
   app.js           construieste aplicatia Express
   server.js        porneste serverul
 tests/             teste Vitest + Supertest
-  setup/           migrarile inainte de teste, golirea tabelelor intre teste
+  setup/           migrarile inainte de teste, golirea tabelelor intre teste,
+                   helper-ul pentru un utilizator autentificat
 ```
 
 - Controller-ul nu accesează direct modelul; trece prin serviciu.

@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { validate } from '../../middleware/validate.js';
 
 import * as controller from './auth.controller.js';
-import { inregistrareBodyRules } from './auth.validators.js';
+import { inregistrareBodyRules, loginBodyRules } from './auth.validators.js';
 
 export const authRouter = Router();
 
@@ -13,3 +13,4 @@ authRouter.post(
   validate,
   controller.register,
 );
+authRouter.post('/login', loginBodyRules, validate, controller.login);

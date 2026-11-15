@@ -74,6 +74,7 @@ jobs:
       DB_NAME: campus_sports_booking_test
       DB_USER: postgres
       DB_PASSWORD: postgres
+      JWT_SECRET: secret-doar-pentru-teste
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
