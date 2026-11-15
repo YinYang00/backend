@@ -53,6 +53,25 @@ Corpul pentru `POST` și `PUT`:
 
 Erorile au formatul `{ "cod": "FACILITATE_NEGASITA", "mesaj": "..." }`.
 
+## API – Sloturi
+
+| Metodă | Rută                                        | Acces         | Răspuns                                                |
+| ------ | ------------------------------------------- | ------------- | ------------------------------------------------------ |
+| `POST` | `/api/v1/facilitati/:id_facilitate/sloturi` | administrator | `201` sloturile create / `400` / `401` / `403` / `404` |
+
+Generează sloturile consecutive ale unei zile. Data și orele sunt în ora României (`Europe/Bucharest`); ultimul slot nu depășește `ora_sfarsit`, iar sloturile care există deja se sar (o cerere repetată primește `201` cu lista goală). Ziua din trecut, sfârșitul înaintea începutului și durata nepozitivă sau mai mare decât intervalul primesc `400 DATE_INVALIDE`.
+
+```json
+{
+  "data": "2026-11-20",
+  "ora_inceput": "08:00",
+  "ora_sfarsit": "22:00",
+  "durata_minute": 60
+}
+```
+
+Fiecare slot din răspuns are orele în ISO 8601 cu offset, de exemplu `"ora_inceput": "2026-11-20T08:00:00+02:00"`, plus `stare` și `locuri_libere`, calculate din rezervări (ADR 0003).
+
 ## Teste
 
 Testele rulează pe o bază de date separată, al cărei nume trebuie să se termine în `_test`:
