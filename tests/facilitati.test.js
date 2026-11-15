@@ -18,7 +18,7 @@ const TENIS = {
  * Antetul Authorization al unui administrator nou creat in baza de test.
  * @returns {Promise<string>}
  */
-async function getAntetAdministrator() {
+async function createAntetAdministrator() {
   const { token } = await createUtilizatorAutentificat({
     categorie: 'PersonalAdministrativ',
     rol: 'Administrator',
@@ -30,7 +30,7 @@ async function getAntetAdministrator() {
  * Antetul Authorization al unui utilizator obisnuit (rolul Utilizator).
  * @returns {Promise<string>}
  */
-async function getAntetUtilizator() {
+async function createAntetUtilizator() {
   const { token } = await createUtilizatorAutentificat();
   return `Bearer ${token}`;
 }
@@ -86,7 +86,7 @@ describe('POST /facilitati', () => {
   it('raspunde 403 pentru un utilizator care nu e administrator', async () => {
     const res = await request(app)
       .post(URL)
-      .set('Authorization', await getAntetUtilizator())
+      .set('Authorization', await createAntetUtilizator())
       .send(TENIS);
 
     expect(res.status).toBe(403);
@@ -97,7 +97,7 @@ describe('POST /facilitati', () => {
   it('creeaza facilitatea si raspunde 201', async () => {
     const res = await request(app)
       .post(URL)
-      .set('Authorization', await getAntetAdministrator())
+      .set('Authorization', await createAntetAdministrator())
       .send(TENIS);
 
     expect(res.status).toBe(201);
@@ -108,7 +108,7 @@ describe('POST /facilitati', () => {
   it('raspunde 400 cand lipseste denumirea', async () => {
     const res = await request(app)
       .post(URL)
-      .set('Authorization', await getAntetAdministrator())
+      .set('Authorization', await createAntetAdministrator())
       .send({ ...TENIS, denumire: '  ' });
 
     expect(res.status).toBe(400);
@@ -118,7 +118,7 @@ describe('POST /facilitati', () => {
   it('raspunde 400 cand capacitatea nu este pozitiva', async () => {
     const res = await request(app)
       .post(URL)
-      .set('Authorization', await getAntetAdministrator())
+      .set('Authorization', await createAntetAdministrator())
       .send({ ...TENIS, capacitate_maxima: 0 });
 
     expect(res.status).toBe(400);
@@ -129,7 +129,7 @@ describe('POST /facilitati', () => {
 
     const res = await request(app)
       .post(URL)
-      .set('Authorization', await getAntetAdministrator())
+      .set('Authorization', await createAntetAdministrator())
       .send(TENIS);
 
     expect(res.status).toBe(409);
@@ -154,13 +154,13 @@ describe('PUT /facilitati/:id_facilitate', () => {
 
     const res = await request(app)
       .put(`${URL}/${creata.id_facilitate}`)
-      .set('Authorization', await getAntetUtilizator())
+      .set('Authorization', await createAntetUtilizator())
       .send({ ...TENIS, capacitate_maxima: 4 });
 
     expect(res.status).toBe(403);
     expect(res.body.cod).toBe('ACCES_INTERZIS');
-    const citita = await request(app).get(`${URL}/${creata.id_facilitate}`);
-    expect(citita.body.capacitate_maxima).toBe(2);
+    await creata.reload();
+    expect(creata.capacitate_maxima).toBe(2);
   });
 
   it('modifica facilitatea', async () => {
@@ -168,7 +168,7 @@ describe('PUT /facilitati/:id_facilitate', () => {
 
     const res = await request(app)
       .put(`${URL}/${creata.id_facilitate}`)
-      .set('Authorization', await getAntetAdministrator())
+      .set('Authorization', await createAntetAdministrator())
       .send({ ...TENIS, capacitate_maxima: 4 });
 
     expect(res.status).toBe(200);
@@ -178,7 +178,7 @@ describe('PUT /facilitati/:id_facilitate', () => {
   it('raspunde 404 pentru o facilitate inexistenta', async () => {
     const res = await request(app)
       .put(`${URL}/999`)
-      .set('Authorization', await getAntetAdministrator())
+      .set('Authorization', await createAntetAdministrator())
       .send(TENIS);
 
     expect(res.status).toBe(404);
@@ -201,7 +201,7 @@ describe('DELETE /facilitati/:id_facilitate', () => {
 
     const res = await request(app)
       .delete(`${URL}/${creata.id_facilitate}`)
-      .set('Authorization', await getAntetUtilizator());
+      .set('Authorization', await createAntetUtilizator());
 
     expect(res.status).toBe(403);
     expect(res.body.cod).toBe('ACCES_INTERZIS');
@@ -213,7 +213,7 @@ describe('DELETE /facilitati/:id_facilitate', () => {
 
     const res = await request(app)
       .delete(`${URL}/${creata.id_facilitate}`)
-      .set('Authorization', await getAntetAdministrator());
+      .set('Authorization', await createAntetAdministrator());
 
     expect(res.status).toBe(204);
     expect(await Facilitate.count()).toBe(0);
@@ -222,7 +222,7 @@ describe('DELETE /facilitati/:id_facilitate', () => {
   it('raspunde 404 pentru o facilitate inexistenta', async () => {
     const res = await request(app)
       .delete(`${URL}/999`)
-      .set('Authorization', await getAntetAdministrator());
+      .set('Authorization', await createAntetAdministrator());
 
     expect(res.status).toBe(404);
   });
