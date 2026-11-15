@@ -70,7 +70,7 @@ Generează sloturile consecutive ale unei zile. Fiecare slot durează exact `dur
 }
 ```
 
-Fiecare slot din răspuns are orele în ISO 8601 cu offset, de exemplu `"ora_inceput": "2026-11-20T08:00:00+02:00"`, plus `stare` și `locuri_libere`, calculate din rezervări (ADR 0003).
+Fiecare slot din răspuns are orele în ISO 8601 cu offset, de exemplu `"ora_inceput": "2026-11-20T08:00:00+02:00"`, plus `stare` și `locuri_libere`. Un slot nou are `stare: "Liber"` și toate locurile libere (`locuri_libere` este capacitatea facilității); la listarea sloturilor, ocuparea se calculează din rezervări (ADR 0003).
 
 ## Teste
 

@@ -13,8 +13,13 @@ const TENIS = {
   capacitate_maxima: 2,
   locatie: 'Baza sportiva USV',
 };
-// O zi de iarna din viitor: ora Romaniei este UTC+02:00.
-const ZI_VIITOARE = '2030-01-15';
+// O zi de iarna departe in viitor: ora Romaniei este UTC+02:00. Data e fixa,
+// ca orele asteptate (cu offset) sa fie scrise de mana, nu calculate.
+const ZI_VIITOARE = '2099-01-15';
+// Ziua de ieri in Romania, calculata independent de codul testat.
+const IERI_ROMANIA = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Bucharest',
+}).format(new Date(Date.now() - 24 * 60 * 60 * 1000));
 const CERERE = {
   data: ZI_VIITOARE,
   ora_inceput: '08:00',
@@ -58,16 +63,16 @@ describe('POST /facilitati/:id_facilitate/sloturi', () => {
       {
         id_slot: 1,
         id_facilitate: tenis.id_facilitate,
-        ora_inceput: '2030-01-15T08:00:00+02:00',
-        ora_sfarsit: '2030-01-15T09:00:00+02:00',
+        ora_inceput: '2099-01-15T08:00:00+02:00',
+        ora_sfarsit: '2099-01-15T09:00:00+02:00',
         stare: 'Liber',
         locuri_libere: 2,
       },
       {
         id_slot: 2,
         id_facilitate: tenis.id_facilitate,
-        ora_inceput: '2030-01-15T09:00:00+02:00',
-        ora_sfarsit: '2030-01-15T10:00:00+02:00',
+        ora_inceput: '2099-01-15T09:00:00+02:00',
+        ora_sfarsit: '2099-01-15T10:00:00+02:00',
         stare: 'Liber',
         locuri_libere: 2,
       },
@@ -92,7 +97,7 @@ describe('POST /facilitati/:id_facilitate/sloturi', () => {
     );
     expect(numar).toBe(3);
     expect(extinsa.body.map((slot) => slot.ora_inceput)).toEqual([
-      '2030-01-15T10:00:00+02:00',
+      '2099-01-15T10:00:00+02:00',
     ]);
   });
 
@@ -121,8 +126,8 @@ describe('POST /facilitati/:id_facilitate/sloturi', () => {
     });
 
     expect(res.body.map((slot) => slot.ora_sfarsit)).toEqual([
-      '2030-01-15T09:00:00+02:00',
-      '2030-01-15T10:00:00+02:00',
+      '2099-01-15T09:00:00+02:00',
+      '2099-01-15T10:00:00+02:00',
     ]);
   });
 
@@ -131,20 +136,20 @@ describe('POST /facilitati/:id_facilitate/sloturi', () => {
 
     const res = await postSloturi(tenis.id_facilitate, {
       ...CERERE,
-      data: '2030-07-15',
+      data: '2099-07-15',
       ora_sfarsit: '09:00',
     });
 
     expect(res.body.map((slot) => slot.ora_inceput)).toEqual([
-      '2030-07-15T08:00:00+03:00',
+      '2099-07-15T08:00:00+03:00',
     ]);
   });
 
   it.each([
     ['ziua este in trecut', { data: '2020-01-15' }],
     ['lipseste data', { data: undefined }],
-    ['data nu exista in calendar', { data: '2030-02-30' }],
-    ['data nu are formatul YYYY-MM-DD', { data: '15.01.2030' }],
+    ['data nu exista in calendar', { data: '2099-02-30' }],
+    ['data nu are formatul YYYY-MM-DD', { data: '15.01.2099' }],
     ['ora de inceput nu are formatul HH:MM', { ora_inceput: '8' }],
     ['lipseste ora de sfarsit', { ora_sfarsit: undefined }],
     ['sfarsitul este inaintea inceputului', { ora_sfarsit: '07:00' }],
@@ -165,6 +170,68 @@ describe('POST /facilitati/:id_facilitate/sloturi', () => {
     expect(res.body.cod).toBe('DATE_INVALIDE');
   });
 
+  it('raspunde 400 pentru ziua de ieri, in ora Romaniei', async () => {
+    const tenis = await Facilitate.create(TENIS);
+
+    const res = await postSloturi(tenis.id_facilitate, {
+      ...CERERE,
+      data: IERI_ROMANIA,
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body.mesaj).toBe(
+      'Nu se pot genera sloturi pentru o zi din trecut.',
+    );
+  });
+
+  it.each([
+    ['data', 123, 'Campul data trebuie sa fie o data YYYY-MM-DD.'],
+    ['ora_inceput', 800, 'Campul ora_inceput trebuie sa fie o ora HH:MM.'],
+    [
+      'ora_sfarsit',
+      ['10:00'],
+      'Campul ora_sfarsit trebuie sa fie o ora HH:MM.',
+    ],
+  ])(
+    'explica de ce %s nu este valid, oricare regula pica',
+    async (camp, valoare, mesaj) => {
+      const tenis = await Facilitate.create(TENIS);
+
+      const res = await postSloturi(tenis.id_facilitate, {
+        ...CERERE,
+        [camp]: valoare,
+      });
+
+      expect(res.status).toBe(400);
+      expect(res.body.mesaj).toBe(mesaj);
+    },
+  );
+
+  it.each([
+    [
+      'durata depaseste ora reala dintre 02:00 si 04:00',
+      { ora_inceput: '02:00', ora_sfarsit: '04:00', durata_minute: 120 },
+    ],
+    [
+      'sfarsitul real este inaintea inceputului (03:30 nu exista)',
+      { ora_inceput: '03:30', ora_sfarsit: '04:00', durata_minute: 30 },
+    ],
+  ])(
+    'raspunde 400 in ziua trecerii la ora de vara cand %s',
+    async (_caz, program) => {
+      const tenis = await Facilitate.create(TENIS);
+
+      const res = await postSloturi(tenis.id_facilitate, {
+        ...CERERE,
+        data: '2099-03-29',
+        ...program,
+      });
+
+      expect(res.status).toBe(400);
+      expect(res.body.cod).toBe('DATE_INVALIDE');
+    },
+  );
+
   it('raspunde 400 pentru un corp gol', async () => {
     const tenis = await Facilitate.create(TENIS);
 
@@ -179,7 +246,7 @@ describe('POST /facilitati/:id_facilitate/sloturi', () => {
 
     const res = await postSloturi(tenis.id_facilitate, {
       ...CERERE,
-      data: '2030-03-31',
+      data: '2099-03-29',
       ora_inceput: '02:00',
       ora_sfarsit: '05:00',
     });
@@ -192,8 +259,8 @@ describe('POST /facilitati/:id_facilitate/sloturi', () => {
         sfarsit,
       ]),
     ).toEqual([
-      ['2030-03-31T02:00:00+02:00', '2030-03-31T04:00:00+03:00'],
-      ['2030-03-31T04:00:00+03:00', '2030-03-31T05:00:00+03:00'],
+      ['2099-03-29T02:00:00+02:00', '2099-03-29T04:00:00+03:00'],
+      ['2099-03-29T04:00:00+03:00', '2099-03-29T05:00:00+03:00'],
     ]);
   });
 
@@ -202,7 +269,7 @@ describe('POST /facilitati/:id_facilitate/sloturi', () => {
 
     const res = await postSloturi(tenis.id_facilitate, {
       ...CERERE,
-      data: '2030-10-27',
+      data: '2099-10-25',
       ora_inceput: '02:00',
       ora_sfarsit: '05:00',
     });
@@ -210,10 +277,10 @@ describe('POST /facilitati/:id_facilitate/sloturi', () => {
     // Ora 03:00 apare de doua ori: intai cu +03:00, apoi cu +02:00.
     expect(res.status).toBe(201);
     expect(res.body.map((slot) => slot.ora_inceput)).toEqual([
-      '2030-10-27T02:00:00+03:00',
-      '2030-10-27T03:00:00+03:00',
-      '2030-10-27T03:00:00+02:00',
-      '2030-10-27T04:00:00+02:00',
+      '2099-10-25T02:00:00+03:00',
+      '2099-10-25T03:00:00+03:00',
+      '2099-10-25T03:00:00+02:00',
+      '2099-10-25T04:00:00+02:00',
     ]);
   });
 

@@ -7,6 +7,7 @@ import { getAziRomania } from '../../utils/ora-romania.js';
 const FORMAT_DATA = /^\d{4}-\d{2}-\d{2}$/;
 const FORMAT_ORA = /^([01]\d|2[0-3]):[0-5]\d$/;
 const MINUTE_PE_ORA = 60;
+const MESAJ_DATA = 'Campul data trebuie sa fie o data YYYY-MM-DD.';
 
 /**
  * Minutele trecute de la miezul noptii pana la o ora `HH:MM`.
@@ -24,10 +25,12 @@ function toMinute(ora) {
  * @returns {import('express-validator').ValidationChain}
  */
 function requiredOra(camp) {
+  const mesaj = `Campul ${camp} trebuie sa fie o ora HH:MM.`;
   return body(camp)
     .isString()
+    .withMessage(mesaj)
     .matches(FORMAT_ORA)
-    .withMessage(`Campul ${camp} trebuie sa fie o ora HH:MM.`);
+    .withMessage(mesaj);
 }
 
 /**
@@ -49,9 +52,11 @@ function getMinuteProgram({ ora_inceput: inceput, ora_sfarsit: sfarsit }) {
 export const generareBodyRules = [
   body('data')
     .isString()
+    .withMessage(MESAJ_DATA)
     .matches(FORMAT_DATA)
+    .withMessage(MESAJ_DATA)
     .isISO8601({ strict: true })
-    .withMessage('Campul data trebuie sa fie o data YYYY-MM-DD.')
+    .withMessage(MESAJ_DATA)
     // Comparatia de siruri e corecta pentru formatul YYYY-MM-DD.
     .custom((data) => data >= getAziRomania())
     .withMessage('Nu se pot genera sloturi pentru o zi din trecut.'),

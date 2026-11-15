@@ -3,10 +3,11 @@
 import { ForeignKeyConstraintError, QueryTypes } from 'sequelize';
 
 import { sequelize } from '../../config/database.js';
+import { AppError } from '../../utils/app-error.js';
 import { FUS_ORAR, toIsoRomania } from '../../utils/ora-romania.js';
 import { findFacilitateById } from '../facilitati/facilitate.service.js';
 
-/** @typedef {import('../../utils/app-error.js').AppError} AppError */
+const HTTP_BAD_REQUEST = 400;
 
 /**
  * Un slot asa cum iese din API. `stare` si `locuri_libere` se calculeaza
@@ -36,6 +37,55 @@ const SQL_GENEREAZA_SLOTURI = `
   RETURNING id_slot, id_facilitate, ora_inceput, ora_sfarsit, stare
 `;
 
+// Cate minute reale are programul zilei. In ziua trecerii la ora de vara o ora
+// locala lipseste, deci 02:00-04:00 are doar 60 de minute reale, iar 03:30 (care
+// nu exista) ajunge dupa 04:00.
+const SQL_MINUTE_REALE = `
+  SELECT EXTRACT(EPOCH FROM
+    ((CAST(:data AS DATE) + CAST(:oraSfarsit AS TIME)) AT TIME ZONE :fusOrar)
+    - ((CAST(:data AS DATE) + CAST(:oraInceput AS TIME)) AT TIME ZONE :fusOrar)
+  ) / 60 AS minute
+`;
+
+/**
+ * Parametrii comuni ai interogarilor pentru programul unei zile.
+ * @param {{data: string, ora_inceput: string, ora_sfarsit: string,
+ *   durata_minute: number}} programZi
+ * @returns {object}
+ */
+function toReplacements(programZi) {
+  return {
+    fusOrar: FUS_ORAR,
+    data: programZi.data,
+    oraInceput: programZi.ora_inceput,
+    oraSfarsit: programZi.ora_sfarsit,
+    durataMinute: programZi.durata_minute,
+  };
+}
+
+/**
+ * Verifica in timp absolut ca macar un slot incape in programul zilei. Regulile
+ * din validator compara orele locale, care difera de cele reale doar in zilele
+ * cu schimbarea orei.
+ * @param {{data: string, ora_inceput: string, ora_sfarsit: string,
+ *   durata_minute: number}} programZi
+ * @returns {Promise<void>}
+ * @throws {AppError} 400 daca durata nu incape in timpul real al programului.
+ */
+async function assertDurataIncape(programZi) {
+  const [{ minute }] = await sequelize.query(SQL_MINUTE_REALE, {
+    type: QueryTypes.SELECT,
+    replacements: toReplacements(programZi),
+  });
+  if (Number(minute) < programZi.durata_minute) {
+    throw new AppError(
+      HTTP_BAD_REQUEST,
+      'DATE_INVALIDE',
+      'Durata nu incape in programul zilei: in aceasta zi se schimba ora.',
+    );
+  }
+}
+
 /**
  * Insereaza sloturile zilei si intoarce randurile create.
  * @param {number} idFacilitate
@@ -48,14 +98,7 @@ async function insertSloturi(idFacilitate, programZi) {
   // RETURNING, ca la un SELECT.
   return sequelize.query(SQL_GENEREAZA_SLOTURI, {
     type: QueryTypes.SELECT,
-    replacements: {
-      idFacilitate,
-      fusOrar: FUS_ORAR,
-      data: programZi.data,
-      oraInceput: programZi.ora_inceput,
-      oraSfarsit: programZi.ora_sfarsit,
-      durataMinute: programZi.durata_minute,
-    },
+    replacements: { idFacilitate, ...toReplacements(programZi) },
   });
 }
 
@@ -68,10 +111,12 @@ async function insertSloturi(idFacilitate, programZi) {
  *   durata_minute: number}} programZi Data `YYYY-MM-DD` si orele `HH:MM`, in
  *   ora Romaniei.
  * @returns {Promise<SlotPublic[]>} Sloturile create, in ordinea orei.
- * @throws {AppError} 404 daca facilitatea nu exista.
+ * @throws {AppError} 400 daca durata nu incape in timpul real al programului,
+ *   404 daca facilitatea nu exista.
  */
 export async function createSloturi(idFacilitate, programZi) {
   const facilitate = await findFacilitateById(idFacilitate);
+  await assertDurataIncape(programZi);
   let sloturi;
   try {
     sloturi = await insertSloturi(idFacilitate, programZi);
