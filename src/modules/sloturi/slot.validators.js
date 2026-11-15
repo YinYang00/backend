@@ -31,14 +31,15 @@ function requiredOra(camp) {
 }
 
 /**
- * Lungimea intervalului in minute, sau undefined daca una dintre ore lipseste
- * ori e gresita (atunci regula orei respective raporteaza eroarea).
+ * Cate minute are programul zilei, de la ora de inceput la cea de sfarsit,
+ * sau undefined daca una dintre ore lipseste ori e gresita (atunci regula
+ * orei respective raporteaza eroarea).
  * @param {object} corp Corpul cererii.
  * @param {unknown} corp.ora_inceput
  * @param {unknown} corp.ora_sfarsit
  * @returns {number | undefined}
  */
-function getMinuteInterval({ ora_inceput: inceput, ora_sfarsit: sfarsit }) {
+function getMinuteProgram({ ora_inceput: inceput, ora_sfarsit: sfarsit }) {
   if (!FORMAT_ORA.test(inceput) || !FORMAT_ORA.test(sfarsit)) {
     return undefined;
   }
@@ -57,7 +58,7 @@ export const generareBodyRules = [
   requiredOra('ora_inceput'),
   requiredOra('ora_sfarsit')
     .custom((_sfarsit, { req }) => {
-      const minute = getMinuteInterval(req.body);
+      const minute = getMinuteProgram(req.body);
       return minute === undefined || minute > 0;
     })
     .withMessage('Ora de sfarsit trebuie sa fie dupa ora de inceput.'),
@@ -66,8 +67,8 @@ export const generareBodyRules = [
     .withMessage('Durata trebuie sa fie un numar intreg pozitiv de minute.')
     .toInt()
     .custom((durata, { req }) => {
-      const minute = getMinuteInterval(req.body);
+      const minute = getMinuteProgram(req.body);
       return minute === undefined || durata <= minute;
     })
-    .withMessage('Durata nu poate fi mai mare decat intervalul.'),
+    .withMessage('Durata nu poate fi mai mare decat programul zilei.'),
 ];

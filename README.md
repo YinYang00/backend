@@ -59,7 +59,7 @@ Erorile au formatul `{ "cod": "FACILITATE_NEGASITA", "mesaj": "..." }`.
 | ------ | ------------------------------------------- | ------------- | ------------------------------------------------------ |
 | `POST` | `/api/v1/facilitati/:id_facilitate/sloturi` | administrator | `201` sloturile create / `400` / `401` / `403` / `404` |
 
-Generează sloturile consecutive ale unei zile. Data și orele sunt în ora României (`Europe/Bucharest`); ultimul slot nu depășește `ora_sfarsit`, iar sloturile care există deja se sar (o cerere repetată primește `201` cu lista goală). Ziua din trecut, sfârșitul înaintea începutului și durata nepozitivă sau mai mare decât intervalul primesc `400 DATE_INVALIDE`.
+Generează sloturile consecutive ale unei zile. Fiecare slot durează exact `durata_minute`, și în zilele în care se schimbă ora. Data și orele sunt în ora României (`Europe/Bucharest`); ultimul slot nu depășește `ora_sfarsit`, iar sloturile care există deja se sar (o cerere repetată primește `201` cu lista goală). Ziua din trecut, sfârșitul înaintea începutului și durata nepozitivă sau mai mare decât programul zilei primesc `400 DATE_INVALIDE`.
 
 ```json
 {

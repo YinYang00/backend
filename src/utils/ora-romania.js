@@ -5,7 +5,7 @@
 /** Fusul orar in care se interpreteaza si se afiseaza orele. */
 export const FUS_ORAR = 'Europe/Bucharest';
 
-const FORMAT_ORA = new Intl.DateTimeFormat('en-CA', {
+const FORMATTER_MOMENT = new Intl.DateTimeFormat('en-CA', {
   timeZone: FUS_ORAR,
   year: 'numeric',
   month: '2-digit',
@@ -17,7 +17,7 @@ const FORMAT_ORA = new Intl.DateTimeFormat('en-CA', {
   timeZoneName: 'longOffset',
 });
 
-const FORMAT_DATA = new Intl.DateTimeFormat('en-CA', {
+const FORMATTER_ZI = new Intl.DateTimeFormat('en-CA', {
   timeZone: FUS_ORAR,
   year: 'numeric',
   month: '2-digit',
@@ -29,7 +29,7 @@ const FORMAT_DATA = new Intl.DateTimeFormat('en-CA', {
  * @returns {string} Data in formatul `YYYY-MM-DD`.
  */
 export function getAziRomania() {
-  return FORMAT_DATA.format(new Date());
+  return FORMATTER_ZI.format(new Date());
 }
 
 /**
@@ -39,7 +39,10 @@ export function getAziRomania() {
  */
 export function toIsoRomania(moment) {
   const parti = Object.fromEntries(
-    FORMAT_ORA.formatToParts(moment).map(({ type, value }) => [type, value]),
+    FORMATTER_MOMENT.formatToParts(moment).map(({ type, value }) => [
+      type,
+      value,
+    ]),
   );
   // Intl scrie offsetul ca „GMT+02:00”, iar pentru offset zero doar „GMT”.
   const offset = parti.timeZoneName.replace('GMT', '') || '+00:00';

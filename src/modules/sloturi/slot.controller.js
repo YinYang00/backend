@@ -13,6 +13,6 @@ const HTTP_CREATED = 201;
  */
 export async function create(req, res) {
   const { id_facilitate: id } = matchedData(req, { locations: ['params'] });
-  const interval = matchedData(req, { locations: ['body'] });
-  res.status(HTTP_CREATED).json(await createSloturi(id, interval));
+  const programZi = matchedData(req, { locations: ['body'] });
+  res.status(HTTP_CREATED).json(await createSloturi(id, programZi));
 }

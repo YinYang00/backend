@@ -15,17 +15,19 @@ import { findFacilitateById } from '../facilitati/facilitate.service.js';
  *   ora_sfarsit: string, stare: string, locuri_libere: number}} SlotPublic
  */
 
-// Sloturile se genereaza in ora locala si abia apoi se transforma in
-// TIMESTAMPTZ, ca o zi cu schimbarea orei sa aiba tot sloturi de ora fixa.
-// Sloturile care exista deja (aceeasi facilitate si ora de inceput) se sar.
+// Inceputul si sfarsitul zilei se transforma intai din ora Romaniei in
+// TIMESTAMPTZ, apoi sloturile se genereaza in timp absolut: fiecare slot
+// dureaza exact durata ceruta, si in zilele in care se schimba ora (cand o ora
+// locala lipseste sau apare de doua ori). Sloturile care exista deja (aceeasi
+// facilitate si ora de inceput) se sar.
 const SQL_GENEREAZA_SLOTURI = `
   INSERT INTO slot (id_facilitate, ora_inceput, ora_sfarsit)
   SELECT :idFacilitate,
-         inceput AT TIME ZONE :fusOrar,
-         (inceput + make_interval(mins => :durataMinute)) AT TIME ZONE :fusOrar
+         inceput,
+         inceput + make_interval(mins => :durataMinute)
   FROM generate_series(
-    CAST(:data AS DATE) + CAST(:oraInceput AS TIME),
-    CAST(:data AS DATE) + CAST(:oraSfarsit AS TIME)
+    (CAST(:data AS DATE) + CAST(:oraInceput AS TIME)) AT TIME ZONE :fusOrar,
+    ((CAST(:data AS DATE) + CAST(:oraSfarsit AS TIME)) AT TIME ZONE :fusOrar)
       - make_interval(mins => :durataMinute),
     make_interval(mins => :durataMinute)
   ) AS inceput
@@ -38,22 +40,24 @@ const SQL_GENEREAZA_SLOTURI = `
  * slot nu depaseste ora de sfarsit; sloturile care exista deja se sar.
  * @param {number} idFacilitate
  * @param {{data: string, ora_inceput: string, ora_sfarsit: string,
- *   durata_minute: number}} interval Data `YYYY-MM-DD` si orele `HH:MM`, in
+ *   durata_minute: number}} programZi Data `YYYY-MM-DD` si orele `HH:MM`, in
  *   ora Romaniei.
  * @returns {Promise<SlotPublic[]>} Sloturile create, in ordinea orei.
  * @throws {AppError} 404 daca facilitatea nu exista.
  */
-export async function createSloturi(idFacilitate, interval) {
+export async function createSloturi(idFacilitate, programZi) {
   const facilitate = await findFacilitateById(idFacilitate);
+  // QueryTypes.SELECT face ca sequelize.query sa intoarca direct randurile din
+  // RETURNING, ca la un SELECT.
   const sloturi = await sequelize.query(SQL_GENEREAZA_SLOTURI, {
     type: QueryTypes.SELECT,
     replacements: {
       idFacilitate,
       fusOrar: FUS_ORAR,
-      data: interval.data,
-      oraInceput: interval.ora_inceput,
-      oraSfarsit: interval.ora_sfarsit,
-      durataMinute: interval.durata_minute,
+      data: programZi.data,
+      oraInceput: programZi.ora_inceput,
+      oraSfarsit: programZi.ora_sfarsit,
+      durataMinute: programZi.durata_minute,
     },
   });
   return sloturi

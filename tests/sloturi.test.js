@@ -2,6 +2,7 @@ import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '../src/app.js';
+import { sequelize } from '../src/config/database.js';
 import { Facilitate } from '../src/modules/facilitati/facilitate.model.js';
 import { createUtilizatorAutentificat } from './setup/utilizator-autentificat.js';
 
@@ -85,6 +86,11 @@ describe('POST /facilitati/:id_facilitate/sloturi', () => {
 
     expect(repetata.status).toBe(201);
     expect(repetata.body).toEqual([]);
+    // Criteriul din YT-44 cere explicit „fara duplicate in baza de date”.
+    const [[{ numar }]] = await sequelize.query(
+      'SELECT COUNT(*)::int AS numar FROM slot',
+    );
+    expect(numar).toBe(3);
     expect(extinsa.body.map((slot) => slot.ora_inceput)).toEqual([
       '2030-01-15T10:00:00+02:00',
     ]);
@@ -150,6 +156,49 @@ describe('POST /facilitati/:id_facilitate/sloturi', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.cod).toBe('DATE_INVALIDE');
+  });
+
+  it('face sloturi de o ora reala in ziua trecerii la ora de vara', async () => {
+    const tenis = await Facilitate.create(TENIS);
+
+    const res = await postSloturi(tenis.id_facilitate, {
+      ...CERERE,
+      data: '2030-03-31',
+      ora_inceput: '02:00',
+      ora_sfarsit: '05:00',
+    });
+
+    // Ora 03:00 nu exista in aceasta zi: dupa 02:59 urmeaza 04:00.
+    expect(res.status).toBe(201);
+    expect(
+      res.body.map(({ ora_inceput: inceput, ora_sfarsit: sfarsit }) => [
+        inceput,
+        sfarsit,
+      ]),
+    ).toEqual([
+      ['2030-03-31T02:00:00+02:00', '2030-03-31T04:00:00+03:00'],
+      ['2030-03-31T04:00:00+03:00', '2030-03-31T05:00:00+03:00'],
+    ]);
+  });
+
+  it('face sloturi de o ora reala in ziua trecerii la ora de iarna', async () => {
+    const tenis = await Facilitate.create(TENIS);
+
+    const res = await postSloturi(tenis.id_facilitate, {
+      ...CERERE,
+      data: '2030-10-27',
+      ora_inceput: '02:00',
+      ora_sfarsit: '05:00',
+    });
+
+    // Ora 03:00 apare de doua ori: intai cu +03:00, apoi cu +02:00.
+    expect(res.status).toBe(201);
+    expect(res.body.map((slot) => slot.ora_inceput)).toEqual([
+      '2030-10-27T02:00:00+03:00',
+      '2030-10-27T03:00:00+03:00',
+      '2030-10-27T03:00:00+02:00',
+      '2030-10-27T04:00:00+02:00',
+    ]);
   });
 
   it('raspunde 404 pentru o facilitate inexistenta', async () => {
