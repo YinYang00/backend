@@ -4,14 +4,29 @@ Serverul REST al aplicației Campus Sports Booking (Node.js + Express.js + Postg
 
 ## Pornire locală
 
-Cerințe: Node.js 20+ și PostgreSQL 16 pornit local (portul 5432), cu baza de date `campus_sports_booking` creată (vezi pagina „Implementarea bazei de date" din Confluence).
+Cerințe: Node.js 20+ și PostgreSQL 16 pornit local (portul 5432), cu o bază de date goală `campus_sports_booking` (`CREATE DATABASE campus_sports_booking;`).
 
 ```bash
 npm install          # instaleaza dependentele si activeaza hook-urile git
 cp .env.example .env # apoi completeaza DB_PASSWORD
-npm run db:init      # creeaza tabela facilitate (daca lipseste) si datele de test
+npm run db:init      # ruleaza migrarile si adauga datele de test
 npm run dev          # porneste serverul pe http://localhost:3000/api/v1
 ```
+
+## Baza de date și migrările
+
+Schema se construiește doar din migrări, rulate cu [Umzug](https://github.com/sequelize/umzug) ([ADR 0001](docs/adr/0001-migrari-umzug.md)); codul nu apelează `sequelize.sync()`. Migrările stau în `src/migrations/` și rulează în ordinea numelui fișierului. Cele deja rulate sunt notate în tabela `SequelizeMeta`, deci fiecare rulează o singură dată.
+
+```bash
+npm run db:migrate   # ruleaza doar migrarile noi
+npm run db:init      # migrarile, apoi datele de test (doar daca tabela facilitate e goala)
+```
+
+Ambele comenzi se pot rula de oricâte ori; a doua rulare nu schimbă nimic. Datele de test sunt cele din pagina „Implementarea bazei de date” din Confluence.
+
+Un tichet care schimbă schema adaugă un fișier nou `src/migrations/<NNNN>-<descriere>.js`, care exportă `up` și `down`; ambele primesc conexiunea Sequelize în `context`. O migrare deja integrată în `main` nu se mai modifică. Pagina „Implementarea bazei de date” se actualizează odată cu migrarea.
+
+O bază creată înainte de migrări (cu vechiul `db:init` sau cu scriptul `campus_sports_booking.sql`) nu are tabela `SequelizeMeta`, iar prima migrare ar da eroare. O astfel de bază se șterge și se creează din nou goală, apoi se rulează `npm run db:init`.
 
 ## API – Facilități
 
@@ -43,6 +58,8 @@ Testele rulează pe o bază de date separată, al cărei nume trebuie să se ter
 ```bash
 DB_NAME=campus_sports_booking_test npm test
 ```
+
+Înainte de teste se rulează migrările pe baza de test, iar înaintea fiecărui test se golesc toate tabelele (`TRUNCATE ... RESTART IDENTITY CASCADE`, în `tests/setup/`). Baza de test trebuie doar să existe; nu are nevoie de `db:init`.
 
 ## Convenții
 

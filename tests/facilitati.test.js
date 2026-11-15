@@ -1,17 +1,8 @@
 import request from 'supertest';
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { createApp } from '../src/app.js';
-import { sequelize } from '../src/config/database.js';
-import { env } from '../src/config/env.js';
 import { Facilitate } from '../src/modules/facilitati/facilitate.model.js';
-
-// Testele sterg tabela, deci refuza sa ruleze pe baza de date de dezvoltare.
-if (!env.db.name.endsWith('_test')) {
-  throw new Error(
-    `Testele ruleaza doar pe o baza *_test (DB_NAME=${env.db.name}).`,
-  );
-}
 
 const app = createApp();
 const URL = '/api/v1/facilitati';
@@ -21,14 +12,6 @@ const TENIS = {
   capacitate_maxima: 2,
   locatie: 'Complex sportiv',
 };
-
-beforeEach(async () => {
-  await sequelize.sync({ force: true });
-});
-
-afterAll(async () => {
-  await sequelize.close();
-});
 
 describe('GET /facilitati', () => {
   it('raspunde cu lista facilitatilor, ordonata dupa id', async () => {
