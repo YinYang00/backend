@@ -96,6 +96,22 @@ describe('POST /facilitati/:id_facilitate/sloturi', () => {
     ]);
   });
 
+  it('nu creeaza sloturi care se suprapun cu cele existente', async () => {
+    const tenis = await Facilitate.create(TENIS);
+    await postSloturi(tenis.id_facilitate, CERERE);
+
+    const res = await postSloturi(tenis.id_facilitate, {
+      ...CERERE,
+      ora_sfarsit: '12:00',
+      durata_minute: 90,
+    });
+
+    // 08:00 exista deja, iar 09:30-11:00 s-ar suprapune cu 09:00-10:00;
+    // doar 11:00-12:30 ar depasi programul, deci nu se creeaza nimic.
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual([]);
+  });
+
   it('nu depaseste ora de sfarsit cu ultimul slot', async () => {
     const tenis = await Facilitate.create(TENIS);
 

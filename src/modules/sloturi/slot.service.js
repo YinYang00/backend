@@ -1,6 +1,6 @@
 // Regulile pentru sloturi. Serviciul nu cunoaste req/res: primeste date simple
 // si arunca AppError pentru situatiile prevazute.
-import { QueryTypes } from 'sequelize';
+import { ForeignKeyConstraintError, QueryTypes } from 'sequelize';
 
 import { sequelize } from '../../config/database.js';
 import { FUS_ORAR, toIsoRomania } from '../../utils/ora-romania.js';
@@ -18,8 +18,9 @@ import { findFacilitateById } from '../facilitati/facilitate.service.js';
 // Inceputul si sfarsitul zilei se transforma intai din ora Romaniei in
 // TIMESTAMPTZ, apoi sloturile se genereaza in timp absolut: fiecare slot
 // dureaza exact durata ceruta, si in zilele in care se schimba ora (cand o ora
-// locala lipseste sau apare de doua ori). Sloturile care exista deja (aceeasi
-// facilitate si ora de inceput) se sar.
+// locala lipseste sau apare de doua ori). Sloturile care exista deja sau care
+// s-ar suprapune cu unul existent (constrangerile UNIQUE si EXCLUDE din
+// migrarea 0003) se sar.
 const SQL_GENEREAZA_SLOTURI = `
   INSERT INTO slot (id_facilitate, ora_inceput, ora_sfarsit)
   SELECT :idFacilitate,
@@ -31,25 +32,21 @@ const SQL_GENEREAZA_SLOTURI = `
       - make_interval(mins => :durataMinute),
     make_interval(mins => :durataMinute)
   ) AS inceput
-  ON CONFLICT (id_facilitate, ora_inceput) DO NOTHING
+  ON CONFLICT DO NOTHING
   RETURNING id_slot, id_facilitate, ora_inceput, ora_sfarsit, stare
 `;
 
 /**
- * Genereaza sloturile consecutive ale unei zile pentru o facilitate. Ultimul
- * slot nu depaseste ora de sfarsit; sloturile care exista deja se sar.
+ * Insereaza sloturile zilei si intoarce randurile create.
  * @param {number} idFacilitate
  * @param {{data: string, ora_inceput: string, ora_sfarsit: string,
- *   durata_minute: number}} programZi Data `YYYY-MM-DD` si orele `HH:MM`, in
- *   ora Romaniei.
- * @returns {Promise<SlotPublic[]>} Sloturile create, in ordinea orei.
- * @throws {AppError} 404 daca facilitatea nu exista.
+ *   durata_minute: number}} programZi
+ * @returns {Promise<object[]>}
  */
-export async function createSloturi(idFacilitate, programZi) {
-  const facilitate = await findFacilitateById(idFacilitate);
+async function insertSloturi(idFacilitate, programZi) {
   // QueryTypes.SELECT face ca sequelize.query sa intoarca direct randurile din
   // RETURNING, ca la un SELECT.
-  const sloturi = await sequelize.query(SQL_GENEREAZA_SLOTURI, {
+  return sequelize.query(SQL_GENEREAZA_SLOTURI, {
     type: QueryTypes.SELECT,
     replacements: {
       idFacilitate,
@@ -60,6 +57,32 @@ export async function createSloturi(idFacilitate, programZi) {
       durataMinute: programZi.durata_minute,
     },
   });
+}
+
+/**
+ * Genereaza sloturile consecutive ale unei zile pentru o facilitate. Ultimul
+ * slot nu depaseste ora de sfarsit; sloturile care exista deja sau care s-ar
+ * suprapune cu unul existent se sar.
+ * @param {number} idFacilitate
+ * @param {{data: string, ora_inceput: string, ora_sfarsit: string,
+ *   durata_minute: number}} programZi Data `YYYY-MM-DD` si orele `HH:MM`, in
+ *   ora Romaniei.
+ * @returns {Promise<SlotPublic[]>} Sloturile create, in ordinea orei.
+ * @throws {AppError} 404 daca facilitatea nu exista.
+ */
+export async function createSloturi(idFacilitate, programZi) {
+  const facilitate = await findFacilitateById(idFacilitate);
+  let sloturi;
+  try {
+    sloturi = await insertSloturi(idFacilitate, programZi);
+  } catch (err) {
+    // Facilitatea a fost stearsa intre verificare si INSERT: cautarea din nou
+    // arunca acelasi 404 FACILITATE_NEGASITA, nu un 500.
+    if (err instanceof ForeignKeyConstraintError) {
+      await findFacilitateById(idFacilitate);
+    }
+    throw err;
+  }
   return sloturi
     .sort((primul, alDoilea) => primul.ora_inceput - alDoilea.ora_inceput)
     .map((slot) => ({

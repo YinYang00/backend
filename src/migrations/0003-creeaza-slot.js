@@ -2,7 +2,10 @@
 // date”, cu doua diferente: orele sunt TIMESTAMPTZ, ca in tot API-ul, iar
 // stare_slot are doar valorile pe care le decide administratorul (ADR 0003:
 // ocuparea se calculeaza din rezervari, nu se memoreaza). Indexul pe
-// (id_facilitate, ora_inceput) il creeaza constrangerea UNIQUE.
+// (id_facilitate, ora_inceput) il creeaza constrangerea UNIQUE. Constrangerea
+// EXCLUDE (extensia btree_gist, ADR 0001) opreste sloturile suprapuse ale
+// aceleiasi facilitati, de exemplu cand o zi se genereaza a doua oara cu alta
+// durata; altfel un teren s-ar putea rezerva de doua ori in acelasi timp.
 
 /**
  * Creeaza tipul stare_slot si tabela slot.
@@ -10,6 +13,7 @@
  * @param {import('sequelize').Sequelize} params.context
  */
 export async function up({ context: sequelize }) {
+  await sequelize.query('CREATE EXTENSION IF NOT EXISTS btree_gist');
   await sequelize.query(`
     CREATE TYPE stare_slot AS ENUM ('Liber', 'Mentenanta')
   `);
@@ -22,7 +26,11 @@ export async function up({ context: sequelize }) {
       ora_sfarsit    TIMESTAMPTZ NOT NULL,
       stare          stare_slot NOT NULL DEFAULT 'Liber',
       CHECK (ora_sfarsit > ora_inceput),
-      UNIQUE (id_facilitate, ora_inceput)
+      UNIQUE (id_facilitate, ora_inceput),
+      EXCLUDE USING gist (
+        id_facilitate WITH =,
+        tstzrange(ora_inceput, ora_sfarsit) WITH &&
+      )
     )
   `);
 }
