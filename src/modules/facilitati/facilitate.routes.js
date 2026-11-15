@@ -1,5 +1,7 @@
 import { Router } from 'express';
 
+import { autentificare } from '../../middleware/autentificare.js';
+import { doarAdministrator } from '../../middleware/doar-administrator.js';
 import { validate } from '../../middleware/validate.js';
 
 import * as controller from './facilitate.controller.js';
@@ -14,9 +16,18 @@ facilitatiRouter.get(
   validate,
   controller.getById,
 );
-facilitatiRouter.post('/', facilitateBodyRules, validate, controller.create);
+facilitatiRouter.post(
+  '/',
+  autentificare,
+  doarAdministrator,
+  facilitateBodyRules,
+  validate,
+  controller.create,
+);
 facilitatiRouter.put(
   '/:id_facilitate',
+  autentificare,
+  doarAdministrator,
   idParamRules,
   facilitateBodyRules,
   validate,
@@ -24,6 +35,8 @@ facilitatiRouter.put(
 );
 facilitatiRouter.delete(
   '/:id_facilitate',
+  autentificare,
+  doarAdministrator,
   idParamRules,
   validate,
   controller.remove,
