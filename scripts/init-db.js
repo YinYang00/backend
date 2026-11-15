@@ -1,47 +1,55 @@
-// Creeaza tabela facilitate daca nu exista si adauga facilitatile de test
-// din Confluence daca tabela este goala. Nu modifica o tabela existenta, deci
-// poate fi rulat si peste baza creata cu scriptul campus_sports_booking.sql.
+// Aduce schema la zi prin migrari (ADR 0001), apoi adauga facilitatile de test
+// din pagina Confluence „Implementarea bazei de date”, doar daca tabela este
+// goala. Rulat din nou, nu modifica nimic.
 import { sequelize } from '../src/config/database.js';
+import { runMigrari } from '../src/config/migrator.js';
 import { Facilitate } from '../src/modules/facilitati/facilitate.model.js';
 
 const FACILITATI_TEST = [
   {
-    denumire: 'Teren tenis',
-    tip: 'Tenis',
-    capacitate_maxima: 2,
-    locatie: 'Complex sportiv, terenul 1',
-  },
-  {
-    denumire: 'Teren fotbal',
-    tip: 'Fotbal',
-    capacitate_maxima: 1,
-    locatie: 'Complex sportiv, terenul 2',
-  },
-  {
-    denumire: 'Teren baschet',
-    tip: 'Baschet',
-    capacitate_maxima: 1,
-    locatie: 'Sala de sport, corp E',
+    denumire: 'Bazin de inot',
+    tip: 'Inot',
+    capacitate_maxima: 6,
+    locatie: 'Complex sportiv USV',
   },
   {
     denumire: 'Sala fitness',
     tip: 'Fitness',
     capacitate_maxima: 20,
-    locatie: 'Camin 3, demisol',
+    locatie: 'Complex sportiv USV',
   },
   {
-    denumire: 'Bazin de inot',
-    tip: 'Inot',
-    capacitate_maxima: 6,
-    locatie: 'Bazinul universitatii',
+    denumire: 'Teren fotbal',
+    tip: 'Sport de echipa',
+    capacitate_maxima: 1,
+    locatie: 'Baza sportiva USV',
+  },
+  {
+    denumire: 'Teren baschet',
+    tip: 'Sport de echipa',
+    capacitate_maxima: 1,
+    locatie: 'Baza sportiva USV',
+  },
+  {
+    denumire: 'Teren tenis',
+    tip: 'Sport cu racheta',
+    capacitate_maxima: 1,
+    locatie: 'Baza sportiva USV',
   },
 ];
 
-await Facilitate.sync();
-if ((await Facilitate.count()) === 0) {
-  await Facilitate.bulkCreate(FACILITATI_TEST);
-  console.info(`Am adaugat ${FACILITATI_TEST.length} facilitati de test.`);
-} else {
-  console.info('Tabela facilitate are deja date; nu am adaugat nimic.');
+try {
+  await runMigrari();
+  if ((await Facilitate.count()) === 0) {
+    await Facilitate.bulkCreate(FACILITATI_TEST);
+    console.info(`Am adaugat ${FACILITATI_TEST.length} facilitati de test.`);
+  } else {
+    console.info('Tabela facilitate are deja date; nu am adaugat nimic.');
+  }
+} catch (err) {
+  console.error(`Baza de date nu a putut fi pregatita: ${err.message}`);
+  console.error('Vezi sectiunea „Baza de date si migrarile” din README.');
+  process.exitCode = 1;
+} finally {
+  await sequelize.close();
 }
-await sequelize.close();
