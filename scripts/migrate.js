@@ -1,13 +1,13 @@
 // Ruleaza migrarile care nu au fost inca aplicate pe baza din .env.
 import { sequelize } from '../src/config/database.js';
-import { migrator } from '../src/config/migrator.js';
+import { runMigrari } from '../src/config/migrator.js';
 
-const aplicate = await migrator.up();
-if (aplicate.length === 0) {
-  console.info('Schema este la zi; nu am rulat nicio migrare.');
-} else {
-  for (const { name } of aplicate) {
-    console.info(`Migrare aplicata: ${name}`);
-  }
+try {
+  await runMigrari();
+} catch (err) {
+  console.error(`Migrarile nu au putut fi aplicate: ${err.message}`);
+  console.error('Vezi sectiunea „Baza de date si migrarile” din README.');
+  process.exitCode = 1;
+} finally {
+  await sequelize.close();
 }
-await sequelize.close();

@@ -2,7 +2,7 @@
 // din pagina Confluence „Implementarea bazei de date”, doar daca tabela este
 // goala. Rulat din nou, nu modifica nimic.
 import { sequelize } from '../src/config/database.js';
-import { migrator } from '../src/config/migrator.js';
+import { runMigrari } from '../src/config/migrator.js';
 import { Facilitate } from '../src/modules/facilitati/facilitate.model.js';
 
 const FACILITATI_TEST = [
@@ -38,13 +38,18 @@ const FACILITATI_TEST = [
   },
 ];
 
-const aplicate = await migrator.up();
-console.info(`Migrari aplicate: ${aplicate.length}.`);
-
-if ((await Facilitate.count()) === 0) {
-  await Facilitate.bulkCreate(FACILITATI_TEST);
-  console.info(`Am adaugat ${FACILITATI_TEST.length} facilitati de test.`);
-} else {
-  console.info('Tabela facilitate are deja date; nu am adaugat nimic.');
+try {
+  await runMigrari();
+  if ((await Facilitate.count()) === 0) {
+    await Facilitate.bulkCreate(FACILITATI_TEST);
+    console.info(`Am adaugat ${FACILITATI_TEST.length} facilitati de test.`);
+  } else {
+    console.info('Tabela facilitate are deja date; nu am adaugat nimic.');
+  }
+} catch (err) {
+  console.error(`Baza de date nu a putut fi pregatita: ${err.message}`);
+  console.error('Vezi sectiunea „Baza de date si migrarile” din README.');
+  process.exitCode = 1;
+} finally {
+  await sequelize.close();
 }
-await sequelize.close();

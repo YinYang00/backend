@@ -8,7 +8,7 @@ import { SequelizeStorage, Umzug } from 'umzug';
 import { sequelize } from './database.js';
 
 /** Tabela in care Umzug noteaza migrarile deja rulate. */
-export const MIGRARI_TABLE = 'SequelizeMeta';
+export const MIGRARI_TABELA = 'SequelizeMeta';
 
 const MIGRARI_DIR = fileURLToPath(new URL('../migrations', import.meta.url));
 
@@ -20,8 +20,24 @@ const MIGRARI_DIR = fileURLToPath(new URL('../migrations', import.meta.url));
 export const migrator = new Umzug({
   migrations: { glob: ['*.js', { cwd: MIGRARI_DIR }] },
   context: sequelize,
-  storage: new SequelizeStorage({ sequelize, tableName: MIGRARI_TABLE }),
+  storage: new SequelizeStorage({ sequelize, tableName: MIGRARI_TABELA }),
   // Fara logger-ul implicit, care ar scrie obiecte brute in consola si la
-  // fiecare rulare a testelor; scripturile isi afiseaza singure rezultatul.
+  // fiecare rulare a testelor; scripturile isi afiseaza rezultatul prin
+  // runMigrari.
   logger: undefined,
 });
+
+/**
+ * Ruleaza migrarile care nu au fost inca aplicate si afiseaza numele lor.
+ * Folosita de scripturile db:migrate si db:init.
+ */
+export async function runMigrari() {
+  const migrariAplicate = await migrator.up();
+  if (migrariAplicate.length === 0) {
+    console.info('Schema este la zi; nu am rulat nicio migrare.');
+    return;
+  }
+  for (const { name } of migrariAplicate) {
+    console.info(`Migrare aplicata: ${name}`);
+  }
+}

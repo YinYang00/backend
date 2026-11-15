@@ -24,7 +24,7 @@ npm run db:init      # migrarile, apoi datele de test (doar daca tabela facilita
 
 Ambele comenzi se pot rula de oricâte ori; a doua rulare nu schimbă nimic. Datele de test sunt cele din pagina „Implementarea bazei de date” din Confluence.
 
-Un tichet care schimbă schema adaugă un fișier nou `src/migrations/<NNNN>-<descriere>.js`, care exportă `up` și `down`; ambele primesc conexiunea Sequelize în `context`. O migrare deja integrată în `main` nu se mai modifică. Pagina „Implementarea bazei de date” se actualizează odată cu migrarea.
+Un tichet care schimbă schema adaugă un fișier nou `src/migrations/<NNNN>-<descriere>.js`, care exportă `up` și `down`; ambele primesc conexiunea Sequelize în `context`. O migrare cu mai multe instrucțiuni le rulează într-o tranzacție (`context.transaction(...)`), ca o eroare să nu lase schema aplicată pe jumătate. O migrare deja integrată în `main` nu se mai modifică. Odată cu migrarea se actualizează și modelul Sequelize al tabelei (`src/modules/<modul>/<entitate>.model.js`: tipuri, lungimi, `unique`, validări), ca să corespundă cu baza de date, și pagina „Implementarea bazei de date” din Confluence.
 
 O bază creată înainte de migrări (cu vechiul `db:init`, cu vechile teste care foloseau `sync()` sau cu scriptul `campus_sports_booking.sql`) nu are tabela `SequelizeMeta`, iar prima migrare dă eroarea `relation "facilitate" already exists`. O astfel de bază se șterge și se creează din nou goală; pentru baza de dezvoltare se rulează apoi `npm run db:init`. Același lucru este valabil pentru baza de test `campus_sports_booking_test`.
 
