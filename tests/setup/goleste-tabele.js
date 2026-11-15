@@ -10,9 +10,9 @@ assertBazaTest();
 
 beforeEach(async () => {
   const [tabele] = await sequelize.query(
-    'SELECT tablename FROM pg_tables WHERE schemaname = :schema ' +
-      'AND tablename <> :migrari',
-    { replacements: { schema: 'public', migrari: MIGRARI_TABLE } },
+    `SELECT tablename FROM pg_tables
+     WHERE schemaname = 'public' AND tablename <> :migrari`,
+    { replacements: { migrari: MIGRARI_TABLE } },
   );
   if (tabele.length === 0) {
     return;
@@ -21,6 +21,8 @@ beforeEach(async () => {
   await sequelize.query(`TRUNCATE ${lista} RESTART IDENTITY CASCADE`);
 });
 
+// Fiecare fisier de test are propria conexiune, pentru ca vitest izoleaza
+// fisierele (isolate: true, implicit), deci o poate inchide la final.
 afterAll(async () => {
   await sequelize.close();
 });

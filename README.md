@@ -26,7 +26,7 @@ Ambele comenzi se pot rula de oricâte ori; a doua rulare nu schimbă nimic. Dat
 
 Un tichet care schimbă schema adaugă un fișier nou `src/migrations/<NNNN>-<descriere>.js`, care exportă `up` și `down`; ambele primesc conexiunea Sequelize în `context`. O migrare deja integrată în `main` nu se mai modifică. Pagina „Implementarea bazei de date” se actualizează odată cu migrarea.
 
-O bază creată înainte de migrări (cu vechiul `db:init` sau cu scriptul `campus_sports_booking.sql`) nu are tabela `SequelizeMeta`, iar prima migrare ar da eroare. O astfel de bază se șterge și se creează din nou goală, apoi se rulează `npm run db:init`.
+O bază creată înainte de migrări (cu vechiul `db:init`, cu vechile teste care foloseau `sync()` sau cu scriptul `campus_sports_booking.sql`) nu are tabela `SequelizeMeta`, iar prima migrare dă eroarea `relation "facilitate" already exists`. O astfel de bază se șterge și se creează din nou goală; pentru baza de dezvoltare se rulează apoi `npm run db:init`. Același lucru este valabil pentru baza de test `campus_sports_booking_test`.
 
 ## API – Facilități
 
@@ -59,7 +59,7 @@ Testele rulează pe o bază de date separată, al cărei nume trebuie să se ter
 DB_NAME=campus_sports_booking_test npm test
 ```
 
-Înainte de teste se rulează migrările pe baza de test, iar înaintea fiecărui test se golesc toate tabelele (`TRUNCATE ... RESTART IDENTITY CASCADE`, în `tests/setup/`). Baza de test trebuie doar să existe; nu are nevoie de `db:init`.
+Înainte de teste se rulează migrările pe baza de test, iar înaintea fiecărui test se golesc toate tabelele (`TRUNCATE ... RESTART IDENTITY CASCADE`, în `tests/setup/`). Baza de test trebuie doar să existe (goală, sau creată deja de migrări); nu are nevoie de `db:init`.
 
 ## Convenții
 

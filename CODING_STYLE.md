@@ -133,7 +133,7 @@ Fiecare modul din diagrama de componente are trei straturi, fiecare cu responsab
 
 ```
 src/
-  config/          variabile de mediu si conexiunea la baza de date
+  config/          variabile de mediu, conexiunea la baza de date, migratorul
   middleware/      tratarea erorilor, validare, autentificare
   modules/
     facilitati/
@@ -142,10 +142,12 @@ src/
       facilitate.controller.js   primeste cererea, apeleaza serviciul, raspunde JSON
       facilitate.validators.js   reguli express-validator
       facilitate.routes.js       leaga rutele de controller
+  migrations/      migrarile Umzug care construiesc schema (ADR 0001)
   utils/           clase si functii comune (AppError)
   app.js           construieste aplicatia Express
   server.js        porneste serverul
 tests/             teste Vitest + Supertest
+  setup/           migrarile inainte de teste, golirea tabelelor intre teste
 ```
 
 - Controller-ul nu accesează direct modelul; trece prin serviciu.

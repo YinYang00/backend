@@ -12,9 +12,16 @@ export const MIGRARI_TABLE = 'SequelizeMeta';
 
 const MIGRARI_DIR = fileURLToPath(new URL('../migrations', import.meta.url));
 
+/**
+ * Ruleaza migrarile din src/migrations; fiecare primeste conexiunea Sequelize
+ * in `context`.
+ * @type {Umzug<import('sequelize').Sequelize>}
+ */
 export const migrator = new Umzug({
   migrations: { glob: ['*.js', { cwd: MIGRARI_DIR }] },
   context: sequelize,
   storage: new SequelizeStorage({ sequelize, tableName: MIGRARI_TABLE }),
+  // Fara logger-ul implicit, care ar scrie obiecte brute in consola si la
+  // fiecare rulare a testelor; scripturile isi afiseaza singure rezultatul.
   logger: undefined,
 });
