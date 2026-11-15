@@ -48,3 +48,4 @@ DB_NAME=campus_sports_booking_test npm test
 
 - [CODING_STYLE.md](CODING_STYLE.md) – coding style-ul backend-ului și cum este impus.
 - [CONTRIBUTING.md](CONTRIBUTING.md) – branch-uri, commit-uri, pull request-uri.
+- [CLAUDE.md](CLAUDE.md) și [docs/agents/setup.md](docs/agents/setup.md) – lucrul cu Claude Code: plugin-ul `mattpocock-skills`, conectorul Atlassian și ce skill se folosește la fiecare pas. La prima sesiune, Claude verifică singur ce lipsește.

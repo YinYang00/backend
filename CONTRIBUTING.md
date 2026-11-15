@@ -4,7 +4,7 @@ Reguli comune pentru repository-urile [`backend`](https://github.com/YinYang00/b
 
 ## 1. Pornirea unui tichet
 
-1. Alegi tichetul din Jira (proiectul **YT**) împreună cu echipa și îl treci în **In Progress**.
+1. Alegi tichetul din Jira (proiectul **YT**) împreună cu echipa și îl treci în **In Progress**. Un tichet este mic: un endpoint cu testele lui sau o componentă, astfel încât PR-ul să poată fi citit în aproximativ 15 minute. Un tichet mai mare se împarte înainte de a începe lucrul.
 2. Actualizezi `main` și creezi branch-ul tichetului:
 
    ```bash
@@ -29,11 +29,12 @@ Branch-ul conține **doar** codul necesar tichetului. Dacă în timpul lucrului 
 
 1. `git push -u origin YT-32-crud-facilitati-backend`
 2. Deschizi PR-ul către `main`, cu titlul `YT-32: CRUD facilitati backend` (verificat de job-ul `pr-title`).
-3. Completezi șablonul de PR și adaugi ca reviewer un coleg (și coordonatorul de laborator).
+3. Completezi șablonul de PR și adaugi ca revieweri **ambii colegi** (și coordonatorul de laborator, dacă dorește): `gh pr create --reviewer <login>,<login>`.
 4. Treci tichetul în Jira în **In Review** și adaugi link-ul PR-ului în tichet.
 
 ## 5. Review și integrare
 
+- Fiecare PR primește review de la **ambii colegi** care nu l-au scris: fiecare membru face review la codul celorlalți doi. Comentariile se lasă pe liniile de cod, iar autorul răspunde la fiecare (modificare în cod sau explicație) și rezolvă conversația.
 - Este nevoie de **cel puțin o aprobare** de la alt membru al echipei. Autorul nu își poate aproba singur PR-ul, iar un push nou anulează aprobările anterioare.
 - Toate conversațiile din review trebuie rezolvate, iar verificările `branch-name`, `pr-title`, `lint` și `test` trebuie să treacă.
 - Integrarea se face doar prin **Squash and merge** sau **Rebase and merge**. Merge commit-ul este dezactivat.
