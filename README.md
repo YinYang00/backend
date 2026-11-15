@@ -30,13 +30,15 @@ O bază creată înainte de migrări (cu vechiul `db:init`, cu vechile teste car
 
 ## API – Facilități
 
-| Metodă   | Rută                                | Răspuns                                              |
-| -------- | ----------------------------------- | ---------------------------------------------------- |
-| `GET`    | `/api/v1/facilitati`                | `200` lista facilităților                            |
-| `GET`    | `/api/v1/facilitati/:id_facilitate` | `200` facilitatea / `404`                            |
-| `POST`   | `/api/v1/facilitati`                | `201` facilitatea creată / `400` / `409`             |
-| `PUT`    | `/api/v1/facilitati/:id_facilitate` | `200` facilitatea modificată / `400` / `404` / `409` |
-| `DELETE` | `/api/v1/facilitati/:id_facilitate` | `204` / `404`                                        |
+| Metodă   | Rută                                | Acces         | Răspuns                                                              |
+| -------- | ----------------------------------- | ------------- | -------------------------------------------------------------------- |
+| `GET`    | `/api/v1/facilitati`                | public        | `200` lista facilităților                                            |
+| `GET`    | `/api/v1/facilitati/:id_facilitate` | public        | `200` facilitatea / `404`                                            |
+| `POST`   | `/api/v1/facilitati`                | administrator | `201` facilitatea creată / `400` / `401` / `403` / `409`             |
+| `PUT`    | `/api/v1/facilitati/:id_facilitate` | administrator | `200` facilitatea modificată / `400` / `401` / `403` / `404` / `409` |
+| `DELETE` | `/api/v1/facilitati/:id_facilitate` | administrator | `204` / `401` / `403` / `404`                                        |
+
+Rutele de administrator cer antetul `Authorization: Bearer <token>`: fără token valid răspund `401 NEAUTENTIFICAT`, iar pentru un utilizator fără rolul `Administrator` răspund `403 ACCES_INTERZIS`.
 
 Corpul pentru `POST` și `PUT`:
 

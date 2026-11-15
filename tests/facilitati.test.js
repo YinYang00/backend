@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createApp } from '../src/app.js';
 import { Facilitate } from '../src/modules/facilitati/facilitate.model.js';
+import { createUtilizatorAutentificat } from './setup/utilizator-autentificat.js';
 
 const app = createApp();
 const URL = '/api/v1/facilitati';
@@ -12,6 +13,27 @@ const TENIS = {
   capacitate_maxima: 2,
   locatie: 'Complex sportiv',
 };
+
+/**
+ * Antetul Authorization al unui administrator nou creat in baza de test.
+ * @returns {Promise<string>}
+ */
+async function getAntetAdministrator() {
+  const { token } = await createUtilizatorAutentificat({
+    categorie: 'PersonalAdministrativ',
+    rol: 'Administrator',
+  });
+  return `Bearer ${token}`;
+}
+
+/**
+ * Antetul Authorization al unui utilizator obisnuit (rolul Utilizator).
+ * @returns {Promise<string>}
+ */
+async function getAntetUtilizator() {
+  const { token } = await createUtilizatorAutentificat();
+  return `Bearer ${token}`;
+}
 
 describe('GET /facilitati', () => {
   it('raspunde cu lista facilitatilor, ordonata dupa id', async () => {
@@ -53,8 +75,30 @@ describe('GET /facilitati/:id_facilitate', () => {
 });
 
 describe('POST /facilitati', () => {
-  it('creeaza facilitatea si raspunde 201', async () => {
+  it('raspunde 401 fara token', async () => {
     const res = await request(app).post(URL).send(TENIS);
+
+    expect(res.status).toBe(401);
+    expect(res.body.cod).toBe('NEAUTENTIFICAT');
+    expect(await Facilitate.count()).toBe(0);
+  });
+
+  it('raspunde 403 pentru un utilizator care nu e administrator', async () => {
+    const res = await request(app)
+      .post(URL)
+      .set('Authorization', await getAntetUtilizator())
+      .send(TENIS);
+
+    expect(res.status).toBe(403);
+    expect(res.body.cod).toBe('ACCES_INTERZIS');
+    expect(await Facilitate.count()).toBe(0);
+  });
+
+  it('creeaza facilitatea si raspunde 201', async () => {
+    const res = await request(app)
+      .post(URL)
+      .set('Authorization', await getAntetAdministrator())
+      .send(TENIS);
 
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject(TENIS);
@@ -64,6 +108,7 @@ describe('POST /facilitati', () => {
   it('raspunde 400 cand lipseste denumirea', async () => {
     const res = await request(app)
       .post(URL)
+      .set('Authorization', await getAntetAdministrator())
       .send({ ...TENIS, denumire: '  ' });
 
     expect(res.status).toBe(400);
@@ -73,6 +118,7 @@ describe('POST /facilitati', () => {
   it('raspunde 400 cand capacitatea nu este pozitiva', async () => {
     const res = await request(app)
       .post(URL)
+      .set('Authorization', await getAntetAdministrator())
       .send({ ...TENIS, capacitate_maxima: 0 });
 
     expect(res.status).toBe(400);
@@ -81,7 +127,10 @@ describe('POST /facilitati', () => {
   it('raspunde 409 pentru o denumire duplicata', async () => {
     await Facilitate.create(TENIS);
 
-    const res = await request(app).post(URL).send(TENIS);
+    const res = await request(app)
+      .post(URL)
+      .set('Authorization', await getAntetAdministrator())
+      .send(TENIS);
 
     expect(res.status).toBe(409);
     expect(res.body.cod).toBe('DENUMIRE_DUPLICATA');
@@ -89,11 +138,37 @@ describe('POST /facilitati', () => {
 });
 
 describe('PUT /facilitati/:id_facilitate', () => {
+  it('raspunde 401 fara token', async () => {
+    const creata = await Facilitate.create(TENIS);
+
+    const res = await request(app)
+      .put(`${URL}/${creata.id_facilitate}`)
+      .send({ ...TENIS, capacitate_maxima: 4 });
+
+    expect(res.status).toBe(401);
+    expect(res.body.cod).toBe('NEAUTENTIFICAT');
+  });
+
+  it('raspunde 403 pentru un utilizator care nu e administrator', async () => {
+    const creata = await Facilitate.create(TENIS);
+
+    const res = await request(app)
+      .put(`${URL}/${creata.id_facilitate}`)
+      .set('Authorization', await getAntetUtilizator())
+      .send({ ...TENIS, capacitate_maxima: 4 });
+
+    expect(res.status).toBe(403);
+    expect(res.body.cod).toBe('ACCES_INTERZIS');
+    const citita = await request(app).get(`${URL}/${creata.id_facilitate}`);
+    expect(citita.body.capacitate_maxima).toBe(2);
+  });
+
   it('modifica facilitatea', async () => {
     const creata = await Facilitate.create(TENIS);
 
     const res = await request(app)
       .put(`${URL}/${creata.id_facilitate}`)
+      .set('Authorization', await getAntetAdministrator())
       .send({ ...TENIS, capacitate_maxima: 4 });
 
     expect(res.status).toBe(200);
@@ -101,24 +176,53 @@ describe('PUT /facilitati/:id_facilitate', () => {
   });
 
   it('raspunde 404 pentru o facilitate inexistenta', async () => {
-    const res = await request(app).put(`${URL}/999`).send(TENIS);
+    const res = await request(app)
+      .put(`${URL}/999`)
+      .set('Authorization', await getAntetAdministrator())
+      .send(TENIS);
 
     expect(res.status).toBe(404);
   });
 });
 
 describe('DELETE /facilitati/:id_facilitate', () => {
-  it('sterge facilitatea si raspunde 204', async () => {
+  it('raspunde 401 fara token', async () => {
     const creata = await Facilitate.create(TENIS);
 
     const res = await request(app).delete(`${URL}/${creata.id_facilitate}`);
+
+    expect(res.status).toBe(401);
+    expect(res.body.cod).toBe('NEAUTENTIFICAT');
+    expect(await Facilitate.count()).toBe(1);
+  });
+
+  it('raspunde 403 pentru un utilizator care nu e administrator', async () => {
+    const creata = await Facilitate.create(TENIS);
+
+    const res = await request(app)
+      .delete(`${URL}/${creata.id_facilitate}`)
+      .set('Authorization', await getAntetUtilizator());
+
+    expect(res.status).toBe(403);
+    expect(res.body.cod).toBe('ACCES_INTERZIS');
+    expect(await Facilitate.count()).toBe(1);
+  });
+
+  it('sterge facilitatea si raspunde 204', async () => {
+    const creata = await Facilitate.create(TENIS);
+
+    const res = await request(app)
+      .delete(`${URL}/${creata.id_facilitate}`)
+      .set('Authorization', await getAntetAdministrator());
 
     expect(res.status).toBe(204);
     expect(await Facilitate.count()).toBe(0);
   });
 
   it('raspunde 404 pentru o facilitate inexistenta', async () => {
-    const res = await request(app).delete(`${URL}/999`);
+    const res = await request(app)
+      .delete(`${URL}/999`)
+      .set('Authorization', await getAntetAdministrator());
 
     expect(res.status).toBe(404);
   });
