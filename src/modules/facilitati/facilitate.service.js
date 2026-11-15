@@ -1,6 +1,6 @@
 // Regulile de business pentru facilitati. Serviciul nu cunoaste req/res:
 // primeste date simple si arunca AppError pentru situatiile prevazute.
-import { UniqueConstraintError } from 'sequelize';
+import { ForeignKeyConstraintError, UniqueConstraintError } from 'sequelize';
 
 import { AppError } from '../../utils/app-error.js';
 
@@ -88,9 +88,22 @@ export async function updateFacilitate(id, date) {
  * Sterge o facilitate.
  * @param {number} id
  * @returns {Promise<void>}
- * @throws {AppError} 404 daca facilitatea nu exista.
+ * @throws {AppError} 404 daca facilitatea nu exista, 409 daca are rezervari.
  */
 export async function removeFacilitate(id) {
   const facilitate = await findFacilitateById(id);
-  await facilitate.destroy();
+  try {
+    await facilitate.destroy();
+  } catch (err) {
+    // Sloturile se sterg in cascada, dar rezervarile lor nu (ON DELETE
+    // RESTRICT, migrarea 0004), ca sa nu se piarda istoricul.
+    if (err instanceof ForeignKeyConstraintError) {
+      throw new AppError(
+        HTTP_CONFLICT,
+        'FACILITATE_CU_REZERVARI',
+        `Facilitatea cu id ${id} are rezervari si nu poate fi stearsa.`,
+      );
+    }
+    throw err;
+  }
 }

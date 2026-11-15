@@ -78,6 +78,24 @@ function postRezervare(corp, token = tokenStudent) {
   return cerere.send(corp);
 }
 
+describe('DELETE /facilitati/:id_facilitate cu rezervari', () => {
+  it('raspunde 409 si pastreaza rezervarile facilitatii', async () => {
+    const { facilitate, slot } = await createSlot();
+    const rezervare = await createRezervareDirect(student, slot, 'Anulata');
+    const { token } = await createUtilizatorAutentificat({
+      rol: 'Administrator',
+    });
+
+    const res = await request(app)
+      .delete(`/api/v1/facilitati/${facilitate.id_facilitate}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(409);
+    expect(res.body.cod).toBe('FACILITATE_CU_REZERVARI');
+    expect(await Rezervare.findByPk(rezervare.id_rezervare)).not.toBeNull();
+  });
+});
+
 describe('POST /rezervari', () => {
   it('rezerva un loc intr-un slot liber si raspunde 201 Confirmata', async () => {
     const { facilitate, slot } = await createSlot();
@@ -102,6 +120,23 @@ describe('POST /rezervari', () => {
     );
     expect(res.body.slot.ora_inceput).toMatch(/[+-]\d{2}:\d{2}$/);
     expect(res.body.data_crearii).toMatch(/[+-]\d{2}:\d{2}$/);
+    const salvata = await Rezervare.findByPk(res.body.id_rezervare);
+    expect(salvata).toMatchObject({
+      id_utilizator: student.id_utilizator,
+      id_slot: slot.id_slot,
+      stare_rezervare: 'Confirmata',
+      cod_qr: res.body.cod_qr,
+    });
+  });
+
+  it('raspunde 401 pentru tokenul unui cont care a fost sters', async () => {
+    const { slot } = await createSlot();
+    await student.destroy();
+
+    const res = await postRezervare({ id_slot: slot.id_slot });
+
+    expect(res.status).toBe(401);
+    expect(res.body.cod).toBe('NEAUTENTIFICAT');
   });
 
   it('raspunde 409 SLOT_OCUPAT cand rezervarile active ocupa toate locurile', async () => {

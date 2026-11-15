@@ -2,11 +2,17 @@
 // simple si arunca AppError pentru situatiile prevazute.
 import { randomUUID } from 'node:crypto';
 
-import { Op, QueryTypes, UniqueConstraintError } from 'sequelize';
+import {
+  ForeignKeyConstraintError,
+  Op,
+  QueryTypes,
+  UniqueConstraintError,
+} from 'sequelize';
 
 import { sequelize } from '../../config/database.js';
 import { AppError } from '../../utils/app-error.js';
 import { toIsoRomania } from '../../utils/ora-romania.js';
+import { createEroareNeautentificat } from '../auth/token.service.js';
 
 import { Rezervare, STARI_ACTIVE } from './rezervare.model.js';
 
@@ -102,7 +108,7 @@ async function assertLocDisponibil(slot, idUtilizator, transaction) {
   if (slot.ora_inceput <= new Date()) {
     throw createEroareSlotOcupat('Slotul a inceput deja.');
   }
-  const active = await Rezervare.findAll({
+  const rezervariActive = await Rezervare.findAll({
     attributes: ['id_utilizator'],
     where: {
       id_slot: slot.id_slot,
@@ -110,10 +116,14 @@ async function assertLocDisponibil(slot, idUtilizator, transaction) {
     },
     transaction,
   });
-  if (active.some((rezervare) => rezervare.id_utilizator === idUtilizator)) {
+  if (
+    rezervariActive.some(
+      (rezervare) => rezervare.id_utilizator === idUtilizator,
+    )
+  ) {
     throw createEroareRezervareSuprapusa();
   }
-  if (active.length >= slot.capacitate_maxima) {
+  if (rezervariActive.length >= slot.capacitate_maxima) {
     throw createEroareSlotOcupat('Slotul nu mai are locuri libere.');
   }
 }
@@ -148,9 +158,10 @@ function toRezervarePublica(rezervare, slot) {
  * @param {number} idUtilizator
  * @param {number} idSlot
  * @returns {Promise<RezervarePublica>}
- * @throws {AppError} 404 daca slotul nu exista; 409 SLOT_OCUPAT daca slotul e
- *   in mentenanta, a inceput sau e plin; 409 REZERVARE_SUPRAPUSA daca
- *   utilizatorul are deja o rezervare activa pe slot.
+ * @throws {AppError} 401 daca contul utilizatorului nu mai exista; 404 daca
+ *   slotul nu exista; 409 SLOT_OCUPAT daca slotul e in mentenanta, a inceput
+ *   sau e plin; 409 REZERVARE_SUPRAPUSA daca utilizatorul are deja o
+ *   rezervare activa pe slot.
  */
 export async function createRezervare(idUtilizator, idSlot) {
   try {
@@ -172,6 +183,11 @@ export async function createRezervare(idUtilizator, idSlot) {
       err.parent?.constraint === INDEX_REZERVARE_ACTIVA
     ) {
       throw createEroareRezervareSuprapusa();
+    }
+    // Tokenul e valid, dar contul a fost sters intre timp: id_utilizator nu
+    // mai exista, deci cererea nu mai are un utilizator autentificat.
+    if (err instanceof ForeignKeyConstraintError) {
+      throw createEroareNeautentificat();
     }
     throw err;
   }

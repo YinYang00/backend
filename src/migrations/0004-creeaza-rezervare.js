@@ -1,6 +1,7 @@
 // Tabela rezervare, ca in scriptul din pagina Confluence „Implementarea bazei
-// de date”, cu trei diferente: data_crearii este TIMESTAMPTZ, ca in tot
-// API-ul; „un utilizator, un slot” este un index unic partial, doar pentru
+// de date”, cu patru diferente: data_crearii este TIMESTAMPTZ, ca in tot
+// API-ul; id_slot are ON DELETE RESTRICT, ca stergerea unui slot sau a unei
+// facilitati sa nu stearga in tacere rezervarile (si istoricul lor, YT-48); „un utilizator, un slot” este un index unic partial, doar pentru
 // rezervarile active, ca o rezervare anulata sa nu blocheze una noua
 // (ADR 0003); triggerele de capacitate nu se preiau, capacitatea o verifica
 // serviciul de rezervare (ADR 0003).
@@ -21,7 +22,7 @@ export async function up({ context: sequelize }) {
       id_utilizator    INT NOT NULL
                          REFERENCES utilizator (id_utilizator) ON DELETE CASCADE,
       id_slot          INT NOT NULL
-                         REFERENCES slot (id_slot) ON DELETE CASCADE,
+                         REFERENCES slot (id_slot) ON DELETE RESTRICT,
       stare_rezervare  stare_rezervare NOT NULL DEFAULT 'Confirmata',
       cod_qr           VARCHAR(64) NOT NULL UNIQUE,
       data_crearii     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
