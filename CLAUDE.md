@@ -6,7 +6,7 @@ Serverul REST al aplicației **Campus Sports Booking** (USV): Node.js 20+, Expre
 
 Înainte de prima sarcină din sesiune, verifică pregătirea: skill-urile `tdd` și `code-review` (plugin-ul `mattpocock-skills`) apar în lista ta de skill-uri, uneltele Atlassian (`searchJiraIssuesUsingJql`) sunt disponibile și există `node_modules/`. Dacă lipsește oricare, citește `docs/agents/setup.md` și ghidează colegul prin pașii lipsă înainte de orice altă muncă.
 
-Apoi află tichetul Jira la care lucrează colegul, din numele branch-ului curent (`YT-<nr>-...`) sau întrebându-l. Pe `main` se lucrează doar după ce există tichetul și branch-ul lui, conform [CONTRIBUTING.md](CONTRIBUTING.md).
+Apoi află tichetul Jira la care lucrează colegul, din numele branch-ului curent (`YT-<nr>-...`) sau întrebându-l. Pe `main` se lucrează doar după ce există tichetul și branch-ul lui, conform [CONTRIBUTING.md](CONTRIBUTING.md). Dacă `git status` arată modificări necommise, propune un commit înainte de munca nouă: Laboratorul 7 cere un commit înaintea fiecărei sesiuni cu AI, ca orice modificare să se poată anula.
 
 ## Comenzi
 
@@ -26,6 +26,8 @@ Testele șterg tabelele, de aceea rulează doar pe o bază al cărei nume se ter
   - orice modificare pornește de la un tichet Jira din proiectul YT;
   - branch `YT-<nr>-<titlu-tichet>`, commit-uri `YT-<nr>: <descriere la imperativ>`;
   - nu se face niciodată push pe `main`: totul intră prin PR, completat după `.github/pull_request_template.md`.
+- Tichetele sunt mici și verificabile: un endpoint cu testele lui sau o componentă, cu un diff pe care un coleg îl citește în aproximativ 15 minute. Când munca crește peste atât, propune împărțirea tichetului în Jira.
+- La deschiderea PR-ului cere review de la ambii colegi care nu sunt autori (`gh pr create --reviewer <login>,<login>`; loginurile sunt în `docs/agents/review.md`).
 - Un branch conține doar ce cere tichetul. Orice altceva descoperit pe parcurs devine tichet nou, pe care îl propui utilizatorului.
 - Contractul API și schema bazei de date sunt definite în Confluence (vezi `docs/agents/domain.md`). Nu schimba o rută sau o coloană fără să verifici pagina respectivă.
 
@@ -40,13 +42,15 @@ Skill-urile marcate „colegul” pornesc doar când colegul tastează comanda; 
 | Situația                                            | Skill                                                                  | Cine îl pornește |
 | --------------------------------------------------- | ---------------------------------------------------------------------- | ---------------- |
 | Colegul nu știe ce skill sau ce pas urmează         | `/ask-matt`                                                            | colegul          |
-| Un tichet sau o funcționalitate nouă e încă neclară | `/grill-with-docs` (scrie și `GLOSSARY.md` și ADR-urile)               | colegul          |
+| Începe un modul nou sau un tichet e încă neclar     | `/grill-with-docs` (scrie și `GLOSSARY.md` și ADR-urile)               | colegul          |
 | Discuția trebuie transformată în tichete Jira       | `/to-spec`, apoi `/to-tickets`                                         | colegul          |
 | Implementarea unui tichet, pe branch-ul lui         | `/implement YT-<nr>` (folosește `tdd`, apoi `code-review`)             | colegul          |
 | Cod nou sau bug reparat test-first                  | `tdd`                                                                  | Claude           |
 | Ceva e stricat, aruncă erori sau e lent             | `diagnosing-bugs`                                                      | Claude           |
 | O idee de interfață sau de logică trebuie încercată | `prototype`                                                            | Claude           |
 | Înainte de PR                                       | `code-review`, față de `main`                                          | Claude           |
+| Review la PR-ul unui coleg                          | pașii din `docs/agents/review.md` (includ `code-review`)               | Claude           |
+| Comentarii primite la propriul PR                   | pașii din `docs/agents/review.md`                                      | Claude           |
 | Descrierea PR-ului                                  | șablonul `.github/pull_request_template.md`; `pr` doar pentru conținut | Claude           |
 | Sesiunea e lungă și munca trece în altă sesiune     | `/handoff`                                                             | colegul          |
 
@@ -63,6 +67,10 @@ Cele cinci etichete canonice (`needs-triage`, `needs-info`, `ready-for-agent`, `
 ### Domain docs
 
 Single-context: `GLOSSARY.md` și `docs/adr/` în rădăcina repository-ului, plus documentația din Confluence. See `docs/agents/domain.md`.
+
+### Code review
+
+Review la PR-urile colegilor și răspunsul la comentariile primite. See `docs/agents/review.md`.
 
 ### Pregătirea mediului
 
