@@ -5,6 +5,9 @@ import { body } from 'express-validator';
 const MAX_NUME = 100;
 const MAX_EMAIL = 150;
 const MIN_PAROLA = 8;
+// bcrypt foloseste doar primii 72 de octeti ai parolei; restul ar fi ignorat
+// fara eroare. Se numara octeti, nu caractere: o diacritica ocupa doi.
+const MAX_OCTETI_PAROLA = 72;
 
 export const inregistrareBodyRules = [
   body('nume')
@@ -30,5 +33,10 @@ export const inregistrareBodyRules = [
     .isString()
     .withMessage('Campul parola este obligatoriu.')
     .isLength({ min: MIN_PAROLA })
-    .withMessage(`Parola are minimum ${MIN_PAROLA} caractere.`),
+    .withMessage(`Parola are minimum ${MIN_PAROLA} caractere.`)
+    .custom((parola) => Buffer.byteLength(parola) <= MAX_OCTETI_PAROLA)
+    .withMessage(
+      `Parola are maximum ${MAX_OCTETI_PAROLA} de octeti ` +
+        '(o litera cu diacritice ocupa doi).',
+    ),
 ];
