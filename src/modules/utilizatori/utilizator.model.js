@@ -36,7 +36,8 @@ export const Utilizator = sequelize.define(
     data_crearii: {
       type: DataTypes.DATE,
       allowNull: false,
-      defaultValue: DataTypes.NOW,
+      // Ora o pune PostgreSQL, ca la orice INSERT facut direct in SQL.
+      defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
     },
   },
   {

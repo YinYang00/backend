@@ -80,7 +80,8 @@ describe('POST /auth/inregistrare', () => {
 
   it.each([
     ['parola are sub 8 caractere', { parola: 'scurta1' }],
-    ['lipseste numele', { nume: '   ' }],
+    ['numele e gol', { nume: '   ' }],
+    ['lipseste numele', { nume: undefined }],
     ['e-mailul nu este valid', { email: 'andrei.student.usv.ro' }],
   ])('raspunde 400 cand %s', async (_caz, modificare) => {
     const res = await request(app)

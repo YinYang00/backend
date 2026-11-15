@@ -10,6 +10,12 @@ const HTTP_BAD_REQUEST = 400;
 const HTTP_CONFLICT = 409;
 const BCRYPT_ROUNDS = 10;
 
+/**
+ * Datele utilizatorului care pot iesi din server (fara hash-ul parolei).
+ * @typedef {{id_utilizator: number, nume: string, email: string,
+ *   categorie: string, rol: string}} UtilizatorPublic
+ */
+
 // Categoria se deduce din domeniul e-mailului institutional (GLOSSARY.md).
 const CATEGORIE_DUPA_DOMENIU = new Map([
   ['student.usv.ro', 'Student'],
@@ -22,16 +28,15 @@ const CATEGORIE_DUPA_DOMENIU = new Map([
  * @returns {string | undefined} Categoria, sau undefined pentru un domeniu
  *   care nu este al USV.
  */
-function findCategorie(email) {
+function getCategorieByEmail(email) {
   const domeniu = email.slice(email.lastIndexOf('@') + 1).toLowerCase();
   return CATEGORIE_DUPA_DOMENIU.get(domeniu);
 }
 
 /**
- * Datele utilizatorului care pot iesi din server (fara hash-ul parolei).
+ * Pastreaza doar datele publice ale utilizatorului.
  * @param {Utilizator} utilizator
- * @returns {{id_utilizator: number, nume: string, email: string,
- *   categorie: string, rol: string}}
+ * @returns {UtilizatorPublic}
  */
 function toUtilizatorPublic(utilizator) {
   return {
@@ -46,12 +51,11 @@ function toUtilizatorPublic(utilizator) {
 /**
  * Creeaza contul unui utilizator nou, cu rolul Utilizator.
  * @param {{nume: string, email: string, parola: string}} date
- * @returns {Promise<{id_utilizator: number, nume: string, email: string,
- *   categorie: string, rol: string}>}
+ * @returns {Promise<UtilizatorPublic>}
  * @throws {AppError} 400 daca e-mailul nu este al USV.
  */
 export async function registerUtilizator({ nume, email, parola }) {
-  const categorie = findCategorie(email);
+  const categorie = getCategorieByEmail(email);
   if (!categorie) {
     throw new AppError(
       HTTP_BAD_REQUEST,
