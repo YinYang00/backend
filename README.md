@@ -72,6 +72,20 @@ Generează sloturile consecutive ale unei zile. Fiecare slot durează exact `dur
 
 Fiecare slot din răspuns are orele în ISO 8601 cu offset, de exemplu `"ora_inceput": "2026-11-20T08:00:00+02:00"`, plus `stare` și `locuri_libere`. Un slot nou are `stare: "Liber"` și toate locurile libere (`locuri_libere` este capacitatea facilității); la listarea sloturilor, ocuparea se calculează din rezervări (ADR 0003).
 
+## API – Rezervări
+
+| Metodă | Rută                | Acces        | Răspuns                                                 |
+| ------ | ------------------- | ------------ | ------------------------------------------------------- |
+| `POST` | `/api/v1/rezervari` | autentificat | `201` rezervarea creată / `400` / `401` / `404` / `409` |
+
+Corpul este `{ "id_slot": 15 }`. Rezervarea se face într-o tranzacție, cu rândul slotului blocat (`SELECT ... FOR UPDATE`, ADR 0003), deci un slot nu trece niciodată peste capacitatea facilității. Doar rezervările active (`Confirmata`, `PrezentaConfirmata`) ocupă locuri.
+
+- `409 SLOT_OCUPAT`: slotul este în mentenanță, a început deja sau nu mai are locuri libere.
+- `409 REZERVARE_SUPRAPUSA`: utilizatorul are deja o rezervare activă pe acest slot.
+- `404 SLOT_NEGASIT`: slotul nu există.
+
+Răspunsul conține `id_rezervare`, `stare_rezervare` (`Confirmata`), `cod_qr` (un UUID aleator), `data_crearii`, slotul (`id_slot`, `ora_inceput`, `ora_sfarsit`) și facilitatea (`id_facilitate`, `denumire`), cu orele în ISO 8601 cu offset.
+
 ## Teste
 
 Testele rulează pe o bază de date separată, al cărei nume trebuie să se termine în `_test`:

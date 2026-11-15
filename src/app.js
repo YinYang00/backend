@@ -5,6 +5,7 @@ import { env } from './config/env.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import { authRouter } from './modules/auth/auth.routes.js';
 import { facilitatiRouter } from './modules/facilitati/facilitate.routes.js';
+import { rezervariRouter } from './modules/rezervari/rezervare.routes.js';
 import { sloturiRouter } from './modules/sloturi/slot.routes.js';
 import { utilizatoriRouter } from './modules/utilizatori/utilizator.routes.js';
 
@@ -27,6 +28,7 @@ export function createApp() {
   app.use(`${API_PREFIX}/auth`, authRouter);
   app.use(`${API_PREFIX}/facilitati`, facilitatiRouter);
   app.use(`${API_PREFIX}/facilitati/:id_facilitate/sloturi`, sloturiRouter);
+  app.use(`${API_PREFIX}/rezervari`, rezervariRouter);
   app.use(`${API_PREFIX}/utilizatori`, utilizatoriRouter);
 
   app.use(notFoundHandler);
