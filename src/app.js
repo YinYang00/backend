@@ -3,6 +3,7 @@ import express from 'express';
 
 import { env } from './config/env.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
+import { authRouter } from './modules/auth/auth.routes.js';
 import { facilitatiRouter } from './modules/facilitati/facilitate.routes.js';
 
 const API_PREFIX = '/api/v1';
@@ -21,6 +22,7 @@ export function createApp() {
   app.get(`${API_PREFIX}/health`, (_req, res) => {
     res.json({ status: 'ok' });
   });
+  app.use(`${API_PREFIX}/auth`, authRouter);
   app.use(`${API_PREFIX}/facilitati`, facilitatiRouter);
 
   app.use(notFoundHandler);
