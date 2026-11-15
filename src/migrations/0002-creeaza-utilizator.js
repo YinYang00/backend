@@ -1,5 +1,6 @@
-// Tabela utilizator si tipurile ei enumerate, exact ca in scriptul din pagina
-// Confluence „Implementarea bazei de date”.
+// Tabela utilizator si tipurile ei enumerate, ca in scriptul din pagina
+// Confluence „Implementarea bazei de date”. Orele sunt TIMESTAMPTZ, ca in tot
+// API-ul (ISO 8601 cu offset).
 
 /**
  * Creeaza tipurile categorie_utilizator si rol_utilizator si tabela
@@ -23,7 +24,7 @@ export async function up({ context: sequelize }) {
       parola_hash    VARCHAR(255) NOT NULL,
       categorie      categorie_utilizator NOT NULL,
       rol            rol_utilizator NOT NULL DEFAULT 'Utilizator',
-      data_crearii   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      data_crearii   TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
 }
