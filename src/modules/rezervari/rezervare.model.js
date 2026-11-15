@@ -3,6 +3,14 @@ import { DataTypes } from 'sequelize';
 
 import { sequelize } from '../../config/database.js';
 
+/** Starile memorate ale unei rezervari (ADR 0002), ca in migrarea 0004. */
+export const STARI_REZERVARE = [
+  'Confirmata',
+  'PrezentaConfirmata',
+  'Anulata',
+  'Neonorata',
+];
+
 /** Starile in care o rezervare ocupa un loc (GLOSSARY.md, „Rezervare activa”). */
 export const STARI_ACTIVE = ['Confirmata', 'PrezentaConfirmata'];
 
@@ -23,12 +31,7 @@ export const Rezervare = sequelize.define(
       allowNull: false,
     },
     stare_rezervare: {
-      type: DataTypes.ENUM(
-        'Confirmata',
-        'PrezentaConfirmata',
-        'Anulata',
-        'Neonorata',
-      ),
+      type: DataTypes.ENUM(...STARI_REZERVARE),
       allowNull: false,
       defaultValue: 'Confirmata',
     },

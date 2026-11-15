@@ -45,7 +45,7 @@ async function createSlot({ capacitate = 1, oreDeAcum = 24, stare } = {}) {
   return { facilitate, slot };
 }
 
-let numarCoduri = 0;
+let contorCodQr = 0;
 
 /**
  * Creeaza direct in baza o rezervare in starea ceruta.
@@ -55,12 +55,12 @@ let numarCoduri = 0;
  * @returns {Promise<Rezervare>}
  */
 function createRezervareDirect(utilizator, slot, stare) {
-  numarCoduri += 1;
+  contorCodQr += 1;
   return Rezervare.create({
     id_utilizator: utilizator.id_utilizator,
     id_slot: slot.id_slot,
     stare_rezervare: stare,
-    cod_qr: `TEST-${numarCoduri}`,
+    cod_qr: `TEST-${contorCodQr}`,
   });
 }
 
@@ -86,7 +86,7 @@ describe('POST /rezervari', () => {
 
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({
-      id_rezervare: 1,
+      id_rezervare: expect.any(Number),
       stare_rezervare: 'Confirmata',
       slot: { id_slot: slot.id_slot },
       facilitate: {
@@ -102,7 +102,6 @@ describe('POST /rezervari', () => {
     );
     expect(res.body.slot.ora_inceput).toMatch(/[+-]\d{2}:\d{2}$/);
     expect(res.body.data_crearii).toMatch(/[+-]\d{2}:\d{2}$/);
-    expect(student.id_utilizator).toBe(1);
   });
 
   it('raspunde 409 SLOT_OCUPAT cand rezervarile active ocupa toate locurile', async () => {
@@ -155,6 +154,16 @@ describe('POST /rezervari', () => {
   it('raspunde 409 REZERVARE_SUPRAPUSA la a doua rezervare pe acelasi slot', async () => {
     const { slot } = await createSlot({ capacitate: 5 });
     await postRezervare({ id_slot: slot.id_slot });
+
+    const res = await postRezervare({ id_slot: slot.id_slot });
+
+    expect(res.status).toBe(409);
+    expect(res.body.cod).toBe('REZERVARE_SUPRAPUSA');
+  });
+
+  it('raspunde REZERVARE_SUPRAPUSA, nu SLOT_OCUPAT, cand locul e chiar al lui', async () => {
+    const { slot } = await createSlot({ capacitate: 1 });
+    await createRezervareDirect(student, slot, 'Confirmata');
 
     const res = await postRezervare({ id_slot: slot.id_slot });
 

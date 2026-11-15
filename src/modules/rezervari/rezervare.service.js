@@ -12,6 +12,9 @@ import { Rezervare, STARI_ACTIVE } from './rezervare.model.js';
 
 const HTTP_NOT_FOUND = 404;
 const HTTP_CONFLICT = 409;
+const STARE_MENTENANTA = 'Mentenanta';
+// Indexul unic partial din migrarea 0004: un utilizator, un slot, activ.
+const INDEX_REZERVARE_ACTIVA = 'uq_rezervare_activa';
 
 /**
  * O rezervare asa cum iese din API.
@@ -19,6 +22,13 @@ const HTTP_CONFLICT = 409;
  *   data_crearii: string,
  *   slot: {id_slot: number, ora_inceput: string, ora_sfarsit: string},
  *   facilitate: {id_facilitate: number, denumire: string}}} RezervarePublica
+ */
+
+/**
+ * Randul slotului blocat, impreuna cu facilitatea lui.
+ * @typedef {{id_slot: number, ora_inceput: Date, ora_sfarsit: Date,
+ *   stare: string, id_facilitate: number, denumire: string,
+ *   capacitate_maxima: number}} SlotBlocat
  */
 
 // Blocheaza randul slotului pana la sfarsitul tranzactiei (ADR 0003): doua
@@ -58,7 +68,7 @@ function createEroareRezervareSuprapusa() {
  * Citeste si blocheaza slotul, impreuna cu facilitatea lui.
  * @param {number} idSlot
  * @param {import('sequelize').Transaction} transaction
- * @returns {Promise<object>}
+ * @returns {Promise<SlotBlocat>}
  * @throws {AppError} 404 daca slotul nu exista.
  */
 async function findSlotBlocat(idSlot, transaction) {
@@ -79,14 +89,14 @@ async function findSlotBlocat(idSlot, transaction) {
 
 /**
  * Verifica, cu slotul deja blocat, ca utilizatorul poate ocupa un loc.
- * @param {object} slot
+ * @param {SlotBlocat} slot
  * @param {number} idUtilizator
  * @param {import('sequelize').Transaction} transaction
  * @returns {Promise<void>}
  * @throws {AppError} 409 SLOT_OCUPAT sau REZERVARE_SUPRAPUSA.
  */
 async function assertLocDisponibil(slot, idUtilizator, transaction) {
-  if (slot.stare === 'Mentenanta') {
+  if (slot.stare === STARE_MENTENANTA) {
     throw createEroareSlotOcupat('Slotul este blocat pentru mentenanta.');
   }
   if (slot.ora_inceput <= new Date()) {
@@ -109,6 +119,30 @@ async function assertLocDisponibil(slot, idUtilizator, transaction) {
 }
 
 /**
+ * Pastreaza datele rezervarii care ies din API.
+ * @param {Rezervare} rezervare
+ * @param {SlotBlocat} slot
+ * @returns {RezervarePublica}
+ */
+function toRezervarePublica(rezervare, slot) {
+  return {
+    id_rezervare: rezervare.id_rezervare,
+    stare_rezervare: rezervare.stare_rezervare,
+    cod_qr: rezervare.cod_qr,
+    data_crearii: toIsoRomania(rezervare.data_crearii),
+    slot: {
+      id_slot: slot.id_slot,
+      ora_inceput: toIsoRomania(slot.ora_inceput),
+      ora_sfarsit: toIsoRomania(slot.ora_sfarsit),
+    },
+    facilitate: {
+      id_facilitate: slot.id_facilitate,
+      denumire: slot.denumire,
+    },
+  };
+}
+
+/**
  * Rezerva un loc pentru utilizator intr-un slot. Totul se face intr-o
  * tranzactie, cu randul slotului blocat (ADR 0003).
  * @param {number} idUtilizator
@@ -127,27 +161,16 @@ export async function createRezervare(idUtilizator, idSlot) {
         { id_utilizator: idUtilizator, id_slot: idSlot, cod_qr: randomUUID() },
         { transaction },
       );
-      await rezervare.reload({ transaction });
-      return {
-        id_rezervare: rezervare.id_rezervare,
-        stare_rezervare: rezervare.stare_rezervare,
-        cod_qr: rezervare.cod_qr,
-        data_crearii: toIsoRomania(rezervare.data_crearii),
-        slot: {
-          id_slot: slot.id_slot,
-          ora_inceput: toIsoRomania(slot.ora_inceput),
-          ora_sfarsit: toIsoRomania(slot.ora_sfarsit),
-        },
-        facilitate: {
-          id_facilitate: slot.id_facilitate,
-          denumire: slot.denumire,
-        },
-      };
+      return toRezervarePublica(rezervare, slot);
     });
   } catch (err) {
-    // Indexul unic partial din migrarea 0004 prinde si cazul rar in care doua
-    // cereri ale aceluiasi utilizator trec de verificare in acelasi timp.
-    if (err instanceof UniqueConstraintError) {
+    // Plasa de siguranta: indexul unic partial opreste o a doua rezervare
+    // activa a aceluiasi utilizator chiar daca verificarea de mai sus ar fi
+    // ocolita. O coliziune de cod_qr ramane o eroare neprevazuta (500).
+    if (
+      err instanceof UniqueConstraintError &&
+      err.parent?.constraint === INDEX_REZERVARE_ACTIVA
+    ) {
       throw createEroareRezervareSuprapusa();
     }
     throw err;
