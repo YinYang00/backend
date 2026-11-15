@@ -42,6 +42,8 @@ Branch-ul conține **doar** codul necesar tichetului. Dacă în timpul lucrului 
 
 ### Branch-uri dependente
 
+Nu aștepți review-ul sau integrarea ca să lucrezi mai departe: îți poți face toate tichetele din blocul tău, fiecare cu branch-ul și PR-ul lui. Pornești din branch-ul unui coleg doar dacă v-ați înțeles; altfel aștepți ca tichetul lui să fie integrat.
+
 Dacă un tichet are nevoie de codul unui tichet încă neintegrat (de exemplu YT-32 depinde de YT-31), branch-ul lui pornește din branch-ul acelui tichet. PR-ul lui se deschide după ce primul PR a fost integrat. Înainte de deschidere, branch-ul se mută peste `main`:
 
 ```bash

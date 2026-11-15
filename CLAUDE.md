@@ -6,7 +6,9 @@ Serverul REST al aplicației **Campus Sports Booking** (USV): Node.js 20+, Expre
 
 Înainte de prima sarcină din sesiune, verifică pregătirea: skill-urile `tdd` și `code-review` (plugin-ul `mattpocock-skills`) apar în lista ta de skill-uri, uneltele Atlassian (`searchJiraIssuesUsingJql`) sunt disponibile și există `node_modules/`. Dacă lipsește oricare, citește `docs/agents/setup.md` și ghidează colegul prin pașii lipsă înainte de orice altă muncă.
 
-Apoi află tichetul Jira la care lucrează colegul, din numele branch-ului curent (`YT-<nr>-...`) sau întrebându-l. Pe `main` se lucrează doar după ce există tichetul și branch-ul lui, conform [CONTRIBUTING.md](CONTRIBUTING.md). Dacă `git status` arată modificări necommise, propune un commit înainte de munca nouă: Laboratorul 7 cere un commit înaintea fiecărei sesiuni cu AI, ca orice modificare să se poată anula.
+Apoi află tichetul Jira la care lucrează colegul, din numele branch-ului curent (`YT-<nr>-...`) sau întrebându-l. Pe `main`, caută-i următorul tichet: `project = YT AND assignee = currentUser() AND statusCategory = "To Do" ORDER BY key ASC`, primul ale cărui tichete blocante sunt fie în `Done`, fie tichete proprii cu branch-ul deja pe `origin`; propune-l colegului și confirmă cu el înainte să începi.
+
+Colegul nu așteaptă review-ul sau integrarea ca să-și continue tichetele. Când blocantul tichetului ales nu e încă integrat în `main`, branch-ul nou pornește din branch-ul blocantului (`origin/YT-<blocant>-...`), nu din `main`, iar PR-ul lui se deschide abia după integrarea blocantului, cu rebase-ul din [CONTRIBUTING.md](CONTRIBUTING.md) („Branch-uri dependente”). Verifică blocantele cu `getJiraIssue` (`view: "evidence"`) la fiecare `/implement`. La începutul fiecărei sesiuni, caută branch-urile colegului care pornesc dintr-un tichet integrat între timp și propune rebase-ul și PR-ul lor. Pe `main` se lucrează doar după ce există tichetul și branch-ul lui, conform [CONTRIBUTING.md](CONTRIBUTING.md). Dacă `git status` arată modificări necommise, propune un commit înainte de munca nouă: Laboratorul 7 cere un commit înaintea fiecărei sesiuni cu AI, ca orice modificare să se poată anula.
 
 ## Comenzi
 
@@ -29,6 +31,7 @@ Testele șterg tabelele, de aceea rulează doar pe o bază al cărei nume se ter
 - Tichetele sunt mici și verificabile: un endpoint cu testele lui sau o componentă, cu un diff pe care un coleg îl citește în aproximativ 15 minute. Când munca crește peste atât, propune împărțirea tichetului în Jira.
 - La deschiderea PR-ului cere review de la ambii colegi care nu sunt autori (`gh pr create --reviewer <login>,<login>`; loginurile sunt în `docs/agents/review.md`).
 - Un branch conține doar ce cere tichetul. Orice altceva descoperit pe parcurs devine tichet nou, pe care îl propui utilizatorului.
+- Un tichet pe sesiune: după ce PR-ul tichetului e deschis și link-ul lui e în Jira, spune-i colegului să tasteze `/clear`. Următorul tichet pornește cu fereastra de context goală, de la „Început de sesiune”.
 - Contractul API și schema bazei de date sunt definite în Confluence (vezi `docs/agents/domain.md`). Nu schimba o rută sau o coloană fără să verifici pagina respectivă.
 
 ## Testare
@@ -58,7 +61,7 @@ Skill-urile marcate „colegul” pornesc doar când colegul tastează comanda; 
 
 ### Issue tracker
 
-Tichetele stau în Jira, proiectul YT (`yinyang.atlassian.net`), folosit prin conectorul Atlassian. See `docs/agents/issue-tracker.md`.
+Tichetele stau în Jira, proiectul YT (`yinyang.atlassian.net`), folosit prin conectorul Atlassian. Fiecare spec și fiecare tichet are și o pagină în Confluence, în `Implementare / Lab <N>`, cu responsabilul lui. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
