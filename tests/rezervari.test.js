@@ -225,7 +225,7 @@ describe('POST /rezervari', () => {
   });
 
   it('raspunde 409 REZERVARE_SUPRAPUSA pentru un slot suprapus la alta facilitate', async () => {
-    const { slot: slot } = await createSlot();
+    const { slot } = await createSlot();
     const { slot: slotAltaFacilitate } = await createSlot();
     await postRezervare({ id_slot: slot.id_slot });
 
@@ -236,7 +236,7 @@ describe('POST /rezervari', () => {
   });
 
   it('accepta o singura rezervare din doua suprapuse trimise in paralel', async () => {
-    const { slot: slot } = await createSlot();
+    const { slot } = await createSlot();
     const { slot: slotAltaFacilitate } = await createSlot();
 
     const raspunsuri = await Promise.all([
@@ -252,7 +252,7 @@ describe('POST /rezervari', () => {
   });
 
   it('lasa utilizatorul sa rezerve un slot care incepe cand se termina altul', async () => {
-    const { slot: slot } = await createSlot({ oreDeAcum: 24 });
+    const { slot } = await createSlot({ oreDeAcum: 24 });
     const { slot: slotAltaFacilitate } = await createSlot({ oreDeAcum: 25 });
     await postRezervare({ id_slot: slot.id_slot });
 
@@ -262,7 +262,7 @@ describe('POST /rezervari', () => {
   });
 
   it('lasa utilizatorul sa rezerve un slot suprapus cu o rezervare anulata', async () => {
-    const { slot: slot } = await createSlot();
+    const { slot } = await createSlot();
     const { slot: slotAltaFacilitate } = await createSlot();
     await createRezervareDirect(student, slot, 'Anulata');
 
