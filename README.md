@@ -2,16 +2,45 @@
 
 Serverul REST al aplicației Campus Sports Booking (Node.js + Express.js + PostgreSQL + Sequelize).
 
-## Pornire locală
+## Instalare
 
-Cerințe: Node.js 20+ și PostgreSQL 16 pornit local (portul 5432), cu o bază de date goală `campus_sports_booking` (`CREATE DATABASE campus_sports_booking;`).
+Cerințe: Node.js 20+ și [Docker Desktop](https://www.docker.com/products/docker-desktop/) pornit. Nu se instalează PostgreSQL și nu se scrie SQL de mână.
 
 ```bash
-npm install          # instaleaza dependentele si activeaza hook-urile git
-cp .env.example .env # apoi completeaza DB_PASSWORD
-npm run db:init      # ruleaza migrarile si adauga datele de test
-npm run dev          # porneste serverul pe http://localhost:3000/api/v1
+git clone https://github.com/YinYang00/backend.git
+cd backend
+docker compose up -d   # PostgreSQL 16 pe portul 5432, cu baza de dezvoltare si cea de test
+npm install            # dependentele si hook-urile git
+npm run setup          # .env (daca lipseste), migrarile si datele de demo
+npm run dev            # serverul pe http://localhost:3000/api/v1
 ```
+
+`npm run setup` se poate rula de oricâte ori: un `.env` existent nu se modifică, iar datele care există deja nu se adaugă din nou. Datele de demo sunt cele cinci facilități din pagina Confluence „Implementarea bazei de date”, sloturi de o oră (08:00–22:00) pentru azi și următoarele 6 zile, și două conturi:
+
+| Cont          | E-mail                        | Parolă            | Ce poate face                               |
+| ------------- | ----------------------------- | ----------------- | ------------------------------------------- |
+| Administrator | `admin.demo@usv.ro`           | `AdminDemo2026`   | gestionează facilitățile, generează sloturi |
+| Student       | `student.demo@student.usv.ro` | `StudentDemo2026` | rezervă sloturi                             |
+
+Conturile sunt doar pentru demo, pe baza locală. Sloturile pentru zilele următoare se adaugă rulând din nou `npm run setup`.
+
+Testele rulează pe baza `campus_sports_booking_test`, creată de `docker compose` la prima pornire:
+
+```bash
+DB_NAME=campus_sports_booking_test npm test          # bash
+$env:DB_NAME="campus_sports_booking_test"; npm test  # PowerShell
+```
+
+Containerul se oprește cu `docker compose stop`; datele rămân în volumul `date-postgres`. Sloturile de azi care au trecut deja nu se mai pot rezerva; pentru demo se folosesc cele din zilele următoare.
+
+Dacă portul 5432 e ocupat (de exemplu de un PostgreSQL instalat local), alege alt port în terminal înainte de primele două comenzi; `npm run setup` îl scrie și în `.env`:
+
+```bash
+export DB_PORT=5433     # bash
+$env:DB_PORT="5433"     # PowerShell
+```
+
+Cine folosește un PostgreSQL instalat local în loc de Docker creează cele două baze goale, completează `DB_PASSWORD` în `.env` și rulează tot `npm run setup`.
 
 ## Baza de date și migrările
 
@@ -19,10 +48,10 @@ Schema se construiește doar din migrări, rulate cu [Umzug](https://github.com/
 
 ```bash
 npm run db:migrate   # ruleaza doar migrarile noi
-npm run db:init      # migrarile, apoi datele de test (doar daca tabela facilitate e goala)
+npm run db:init      # migrarile, apoi datele de demo care lipsesc (scripts/date-demo.js)
 ```
 
-Ambele comenzi se pot rula de oricâte ori; a doua rulare nu schimbă nimic. Datele de test sunt cele din pagina „Implementarea bazei de date” din Confluence.
+Ambele comenzi se pot rula de oricâte ori; a doua rulare nu schimbă nimic. `npm run setup` face același lucru ca `db:init`, după ce creează `.env` și așteaptă pornirea bazei.
 
 Un tichet care schimbă schema adaugă un fișier nou `src/migrations/<NNNN>-<descriere>.js`, care exportă `up` și `down`; ambele primesc conexiunea Sequelize în `context`. O migrare cu mai multe instrucțiuni le rulează într-o tranzacție (`context.transaction(...)`), ca o eroare să nu lase schema aplicată pe jumătate. O migrare deja integrată în `main` nu se mai modifică. Odată cu migrarea se actualizează și modelul Sequelize al tabelei (`src/modules/<modul>/<entitate>.model.js`: tipuri, lungimi, `unique`, validări), ca să corespundă cu baza de date, și pagina „Implementarea bazei de date” din Confluence.
 

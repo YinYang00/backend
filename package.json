@@ -12,6 +12,7 @@
     "dev": "node --watch src/server.js",
     "db:migrate": "node scripts/migrate.js",
     "db:init": "node scripts/init-db.js",
+    "setup": "node scripts/setup.js",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
