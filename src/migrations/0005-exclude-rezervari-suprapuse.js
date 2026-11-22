@@ -2,13 +2,11 @@
 // Confluence „Tehnologii backend”, sectiunea Prevenirea rezervarilor duble).
 // O constrangere EXCLUDE poate folosi doar coloanele tabelei, deci intervalul
 // orar al slotului se copiaza in rezervare.interval_orar. Il completeaza un
-// trigger, nu serviciul, ca nicio cale de INSERT sa nu-l poata gresi.
-// Constrangerea este partiala, doar pentru rezervarile active, ca o rezervare
-// anulata sa nu blocheze una noua (ADR 0003). Ea acopera si cazul „acelasi
-// slot de doua ori”, deci indexul unic uq_rezervare_activa din 0004 dispare.
-// shortcut: intervalul nu urmeaza o schimbare ulterioara a orelor slotului;
-// azi orele unui slot nu se modifica, la o ruta care le schimba trebuie
-// actualizate si rezervarile lui.
+// trigger, nu serviciul, ca nicio cale de INSERT sa nu-l poata gresi (ADR
+// 0004). Constrangerea este partiala, doar pentru rezervarile active, ca o
+// rezervare anulata sa nu blocheze una noua (ADR 0003). Ea acopera si cazul
+// „acelasi slot de doua ori”, deci indexul unic uq_rezervare_activa din 0004
+// dispare.
 
 /**
  * Adauga interval_orar, triggerul care il completeaza si constrangerea EXCLUDE.
