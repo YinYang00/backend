@@ -3,10 +3,10 @@
 import { randomUUID } from 'node:crypto';
 
 import {
+  ExclusionConstraintError,
   ForeignKeyConstraintError,
   Op,
   QueryTypes,
-  UniqueConstraintError,
 } from 'sequelize';
 
 import { sequelize } from '../../config/database.js';
@@ -19,8 +19,9 @@ import { Rezervare, STARI_ACTIVE } from './rezervare.model.js';
 const HTTP_NOT_FOUND = 404;
 const HTTP_CONFLICT = 409;
 const STARE_MENTENANTA = 'Mentenanta';
-// Indexul unic partial din migrarea 0004: un utilizator, un slot, activ.
-const INDEX_REZERVARE_ACTIVA = 'uq_rezervare_activa';
+// Constrangerea EXCLUDE din migrarea 0005: rezervarile active ale unui
+// utilizator nu se suprapun in timp, la nicio facilitate.
+const CONSTRANGERE_REZERVARE_SUPRAPUSA = 'ex_rezervare_suprapusa';
 
 /**
  * O rezervare asa cum iese din API.
@@ -59,14 +60,15 @@ function createEroareSlotOcupat(motiv) {
 }
 
 /**
- * Eroarea pentru un utilizator care are deja o rezervare activa pe slot.
+ * Eroarea pentru un utilizator care are deja o rezervare activa in acelasi
+ * interval orar, pe acest slot sau la alta facilitate.
  * @returns {AppError}
  */
 function createEroareRezervareSuprapusa() {
   return new AppError(
     HTTP_CONFLICT,
     'REZERVARE_SUPRAPUSA',
-    'Ai deja o rezervare activa pe acest slot.',
+    'Ai deja o rezervare activa in acest interval orar.',
   );
 }
 
@@ -161,7 +163,7 @@ function toRezervarePublica(rezervare, slot) {
  * @throws {AppError} 401 daca contul utilizatorului nu mai exista; 404 daca
  *   slotul nu exista; 409 SLOT_OCUPAT daca slotul e in mentenanta, a inceput
  *   sau e plin; 409 REZERVARE_SUPRAPUSA daca utilizatorul are deja o
- *   rezervare activa pe slot.
+ *   rezervare activa suprapusa in timp, la orice facilitate.
  */
 export async function createRezervare(idUtilizator, idSlot) {
   try {
@@ -175,12 +177,12 @@ export async function createRezervare(idUtilizator, idSlot) {
       return toRezervarePublica(rezervare, slot);
     });
   } catch (err) {
-    // Plasa de siguranta: indexul unic partial opreste o a doua rezervare
-    // activa a aceluiasi utilizator chiar daca verificarea de mai sus ar fi
-    // ocolita. O coliziune de cod_qr ramane o eroare neprevazuta (500).
+    // Baza de date refuza o rezervare suprapusa cu alta rezervare activa a
+    // utilizatorului, chiar daca cele doua cereri au blocat sloturi diferite.
+    // O coliziune de cod_qr ramane o eroare neprevazuta (500).
     if (
-      err instanceof UniqueConstraintError &&
-      err.parent?.constraint === INDEX_REZERVARE_ACTIVA
+      err instanceof ExclusionConstraintError &&
+      err.constraint === CONSTRANGERE_REZERVARE_SUPRAPUSA
     ) {
       throw createEroareRezervareSuprapusa();
     }

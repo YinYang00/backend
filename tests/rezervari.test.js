@@ -206,6 +206,71 @@ describe('POST /rezervari', () => {
     expect(res.body.cod).toBe('REZERVARE_SUPRAPUSA');
   });
 
+  it('da ultimul loc unei singure cereri din mai multe trimise in paralel', async () => {
+    const { slot } = await createSlot({ capacitate: 1 });
+    const tokenuri = [];
+    for (let i = 0; i < 5; i += 1) {
+      tokenuri.push((await createUtilizatorAutentificat()).token);
+    }
+
+    const raspunsuri = await Promise.all(
+      tokenuri.map((token) => postRezervare({ id_slot: slot.id_slot }, token)),
+    );
+
+    const statusuri = raspunsuri.map((res) => res.status).sort();
+    expect(statusuri).toEqual([201, 409, 409, 409, 409]);
+    for (const res of raspunsuri.filter((res) => res.status === 409)) {
+      expect(res.body.cod).toBe('SLOT_OCUPAT');
+    }
+  });
+
+  it('raspunde 409 REZERVARE_SUPRAPUSA pentru un slot suprapus la alta facilitate', async () => {
+    const { slot: slotTenis } = await createSlot();
+    const { slot: slotBaschet } = await createSlot();
+    await postRezervare({ id_slot: slotTenis.id_slot });
+
+    const res = await postRezervare({ id_slot: slotBaschet.id_slot });
+
+    expect(res.status).toBe(409);
+    expect(res.body.cod).toBe('REZERVARE_SUPRAPUSA');
+  });
+
+  it('accepta o singura rezervare din doua suprapuse trimise in paralel', async () => {
+    const { slot: slotTenis } = await createSlot();
+    const { slot: slotBaschet } = await createSlot();
+
+    const raspunsuri = await Promise.all([
+      postRezervare({ id_slot: slotTenis.id_slot }),
+      postRezervare({ id_slot: slotBaschet.id_slot }),
+    ]);
+
+    const statusuri = raspunsuri.map((res) => res.status).sort();
+    expect(statusuri).toEqual([201, 409]);
+    expect(raspunsuri.find((res) => res.status === 409).body.cod).toBe(
+      'REZERVARE_SUPRAPUSA',
+    );
+  });
+
+  it('lasa utilizatorul sa rezerve un slot care incepe cand se termina altul', async () => {
+    const { slot: slotTenis } = await createSlot({ oreDeAcum: 24 });
+    const { slot: slotBaschet } = await createSlot({ oreDeAcum: 25 });
+    await postRezervare({ id_slot: slotTenis.id_slot });
+
+    const res = await postRezervare({ id_slot: slotBaschet.id_slot });
+
+    expect(res.status).toBe(201);
+  });
+
+  it('lasa utilizatorul sa rezerve un slot suprapus cu o rezervare anulata', async () => {
+    const { slot: slotTenis } = await createSlot();
+    const { slot: slotBaschet } = await createSlot();
+    await createRezervareDirect(student, slotTenis, 'Anulata');
+
+    const res = await postRezervare({ id_slot: slotBaschet.id_slot });
+
+    expect(res.status).toBe(201);
+  });
+
   it('raspunde 404 pentru un slot inexistent', async () => {
     const res = await postRezervare({ id_slot: 999 });
 
