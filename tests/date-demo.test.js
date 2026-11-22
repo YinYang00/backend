@@ -2,7 +2,7 @@ import { Op } from 'sequelize';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 
-import { adaugaDateDemo } from '../scripts/date-demo.js';
+import { addDateDemo } from '../scripts/date-demo.js';
 import { createApp } from '../src/app.js';
 import { Facilitate } from '../src/modules/facilitati/facilitate.model.js';
 import { Slot } from '../src/modules/sloturi/slot.model.js';
@@ -28,7 +28,7 @@ function login(cont) {
 
 describe('date de demo', () => {
   it('administratorul de demo se autentifica si genereaza sloturi', async () => {
-    await adaugaDateDemo();
+    await addDateDemo();
 
     const autentificare = await login(ADMIN);
     expect(autentificare.status).toBe(200);
@@ -48,7 +48,7 @@ describe('date de demo', () => {
   });
 
   it('studentul de demo rezerva un slot din urmatoarele zile', async () => {
-    await adaugaDateDemo();
+    await addDateDemo();
     const { body } = await login(STUDENT);
     // Rutele nu listeaza inca sloturile; maine sigur nu a inceput niciunul.
     const slot = await Slot.findOne({
@@ -65,12 +65,12 @@ describe('date de demo', () => {
   });
 
   it('acopera 7 zile, iar a doua rulare nu schimba nimic', async () => {
-    await adaugaDateDemo();
-    const dupaPrima = await numara();
+    await addDateDemo();
+    const dupaPrima = await countRanduri();
 
-    await adaugaDateDemo();
+    await addDateDemo();
 
-    expect(await numara()).toEqual(dupaPrima);
+    expect(await countRanduri()).toEqual(dupaPrima);
     // 5 facilitati, 14 sloturi de cate o ora (08:00-22:00), 7 zile.
     expect(dupaPrima).toEqual({ facilitati: 5, utilizatori: 2, sloturi: 490 });
   });
@@ -81,7 +81,7 @@ describe('date de demo', () => {
  * @returns {Promise<{facilitati: number, utilizatori: number,
  *   sloturi: number}>}
  */
-async function numara() {
+async function countRanduri() {
   return {
     facilitati: await Facilitate.count(),
     utilizatori: await Utilizator.count(),

@@ -31,7 +31,16 @@ DB_NAME=campus_sports_booking_test npm test          # bash
 $env:DB_NAME="campus_sports_booking_test"; npm test  # PowerShell
 ```
 
-Containerul se oprește cu `docker compose stop`; datele rămân în volumul `date-postgres`. Dacă portul 5432 e ocupat de un PostgreSQL instalat local, oprește-l sau pune alt port în `.env` (`DB_PORT=5433`) înainte de `docker compose up -d`. Cine folosește un PostgreSQL instalat local în loc de Docker creează cele două baze goale, completează `DB_PASSWORD` în `.env` și rulează tot `npm run setup`.
+Containerul se oprește cu `docker compose stop`; datele rămân în volumul `date-postgres`. Sloturile de azi care au trecut deja nu se mai pot rezerva; pentru demo se folosesc cele din zilele următoare.
+
+Dacă portul 5432 e ocupat (de exemplu de un PostgreSQL instalat local), alege alt port în terminal înainte de primele două comenzi; `npm run setup` îl scrie și în `.env`:
+
+```bash
+export DB_PORT=5433     # bash
+$env:DB_PORT="5433"     # PowerShell
+```
+
+Cine folosește un PostgreSQL instalat local în loc de Docker creează cele două baze goale, completează `DB_PASSWORD` în `.env` și rulează tot `npm run setup`.
 
 ## Baza de date și migrările
 

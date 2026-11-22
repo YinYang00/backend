@@ -3,12 +3,13 @@
 // Rulat din nou, nu modifica nimic.
 import { randomBytes } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { setTimeout as asteapta } from 'node:timers/promises';
+import { setTimeout as wait } from 'node:timers/promises';
 
 const ENV = new URL('../.env', import.meta.url);
 const ENV_EXEMPLU = new URL('../.env.example', import.meta.url);
 // Aceeasi parola ca valoarea implicita din docker-compose.yml.
 const PAROLA_DOCKER = 'postgres';
+const PORT_DOCKER = 5432;
 const OCTETI_SECRET = 32;
 // Containerul porneste in cateva secunde; dupa 30 de incercari renuntam.
 const INCERCARI = 30;
@@ -26,7 +27,9 @@ function createEnv() {
   const secret = randomBytes(OCTETI_SECRET).toString('hex');
   const continut = readFileSync(ENV_EXEMPLU, 'utf8')
     .replace(/^DB_PASSWORD=.*$/m, `DB_PASSWORD=${PAROLA_DOCKER}`)
-    .replace(/^JWT_SECRET=.*$/m, `JWT_SECRET=${secret}`);
+    .replace(/^JWT_SECRET=.*$/m, `JWT_SECRET=${secret}`)
+    // Portul ales la `docker compose up -d` cand 5432 este ocupat (README).
+    .replace(/^DB_PORT=.*$/m, `DB_PORT=${process.env.DB_PORT ?? PORT_DOCKER}`);
   writeFileSync(ENV, continut);
   console.info('Am creat .env (parola bazei din Docker si un JWT_SECRET nou).');
 }
@@ -49,7 +52,7 @@ async function waitForBaza(sequelize) {
       if (incercare === 1) {
         console.info('Astept pornirea bazei de date...');
       }
-      await asteapta(PAUZA_MS);
+      await wait(PAUZA_MS);
     }
   }
 }

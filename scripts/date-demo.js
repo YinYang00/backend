@@ -57,7 +57,7 @@ const CONTURI_DEMO = [
     nume: 'Administrator Demo',
     email: 'admin.demo@usv.ro',
     parola: 'AdminDemo2026',
-    categorie: 'PersonalAdministrativ',
+    categorie: 'CadruDidactic',
     rol: 'Administrator',
   },
   {
@@ -73,7 +73,7 @@ const CONTURI_DEMO = [
  * Adauga facilitatile de demo, doar daca tabela facilitate este goala.
  * @returns {Promise<void>}
  */
-async function adaugaFacilitati() {
+async function addFacilitati() {
   if ((await Facilitate.count()) > 0) {
     console.info('Tabela facilitate are deja date; nu am adaugat facilitati.');
     return;
@@ -86,7 +86,7 @@ async function adaugaFacilitati() {
  * Creeaza conturile de demo care lipsesc; un cont existent nu se modifica.
  * @returns {Promise<void>}
  */
-async function adaugaConturi() {
+async function addConturi() {
   for (const { parola, ...cont } of CONTURI_DEMO) {
     if (await Utilizator.findOne({ where: { email: cont.email } })) {
       continue;
@@ -116,17 +116,17 @@ function addZile(data, zile) {
  * facilitate. Sloturile care exista deja se sar.
  * @returns {Promise<void>}
  */
-async function adaugaSloturi() {
+async function addSloturi() {
   const azi = getAziRomania();
   const facilitati = await Facilitate.findAll();
   let sloturiNoi = 0;
   for (const { id_facilitate: idFacilitate } of facilitati) {
     for (let zi = 0; zi < ZILE_CU_SLOTURI; zi += 1) {
-      const create = await createSloturi(idFacilitate, {
+      const sloturiCreate = await createSloturi(idFacilitate, {
         ...PROGRAM_ZI,
         data: addZile(azi, zi),
       });
-      sloturiNoi += create.length;
+      sloturiNoi += sloturiCreate.length;
     }
   }
   console.info(`Am adaugat ${sloturiNoi} sloturi de demo.`);
@@ -136,8 +136,8 @@ async function adaugaSloturi() {
  * Adauga datele de demo care lipsesc: facilitatile, conturile si sloturile.
  * @returns {Promise<void>}
  */
-export async function adaugaDateDemo() {
-  await adaugaFacilitati();
-  await adaugaConturi();
-  await adaugaSloturi();
+export async function addDateDemo() {
+  await addFacilitati();
+  await addConturi();
+  await addSloturi();
 }

@@ -3,11 +3,11 @@
 import { sequelize } from '../src/config/database.js';
 import { runMigrari } from '../src/config/migrator.js';
 
-import { adaugaDateDemo } from './date-demo.js';
+import { addDateDemo } from './date-demo.js';
 
 try {
   await runMigrari();
-  await adaugaDateDemo();
+  await addDateDemo();
 } catch (err) {
   console.error(`Baza de date nu a putut fi pregatita: ${err.message}`);
   console.error('Vezi sectiunea „Instalare” din README.');
