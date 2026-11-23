@@ -11,9 +11,6 @@ export const idRezervareParamRules = [
     .toInt(),
 ];
 
-// Cel mai mare id pe care il poate avea o coloana SERIAL (INTEGER) din PostgreSQL.
-const MAX_ID = 2147483647;
-
 export const rezervareBodyRules = [
   body('id_slot')
     .isInt({ min: 1, max: MAX_ID })
