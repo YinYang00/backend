@@ -1,10 +1,11 @@
 // Datele de demo pentru instalarea locala (`npm run setup` / `npm run db:init`):
-// facilitatile din pagina Confluence „Implementarea bazei de date”, un
-// administrator, un student si sloturi pentru urmatoarele 7 zile. Rulat din
-// nou in aceeasi zi, nu modifica nimic.
+// facilitatile si regulile de acces din pagina Confluence „Implementarea bazei
+// de date”, un administrator, un student si sloturi pentru urmatoarele 7 zile.
+// Rulat din nou in aceeasi zi, nu modifica nimic.
 import bcrypt from 'bcrypt';
 
 import { Facilitate } from '../src/modules/facilitati/facilitate.model.js';
+import { RegulaAcces } from '../src/modules/reguli-acces/regula-acces.model.js';
 import { createSloturi } from '../src/modules/sloturi/slot.service.js';
 import { Utilizator } from '../src/modules/utilizatori/utilizator.model.js';
 import { getAziRomania } from '../src/utils/ora-romania.js';
@@ -50,6 +51,28 @@ const FACILITATI_DEMO = [
   },
 ];
 
+// Aceleasi reguli pentru fiecare facilitate, ca in INSERT INTO regula_acces.
+const REGULI_ACCES_DEMO = [
+  {
+    categorie_utilizator: 'Student',
+    ore_maxim_saptamana: 6,
+    prioritate: 2,
+    zile_avans_maxim: 7,
+  },
+  {
+    categorie_utilizator: 'CadruDidactic',
+    ore_maxim_saptamana: 8,
+    prioritate: 1,
+    zile_avans_maxim: 14,
+  },
+  {
+    categorie_utilizator: 'PersonalAdministrativ',
+    ore_maxim_saptamana: 4,
+    prioritate: 3,
+    zile_avans_maxim: 7,
+  },
+];
+
 // Conturi doar pentru demo, pe calculatorul fiecaruia; parolele sunt in
 // README, sectiunea „Instalare”.
 const CONTURI_DEMO = [
@@ -80,6 +103,30 @@ async function addFacilitati() {
   }
   await Facilitate.bulkCreate(FACILITATI_DEMO);
   console.info(`Am adaugat ${FACILITATI_DEMO.length} facilitati de demo.`);
+}
+
+/**
+ * Adauga regulile de acces de demo pentru fiecare facilitate, doar daca
+ * tabela regula_acces este goala: regulile schimbate sau sterse de
+ * administrator raman asa.
+ * @returns {Promise<void>}
+ */
+async function addReguliAcces() {
+  if ((await RegulaAcces.count()) > 0) {
+    console.info(
+      'Tabela regula_acces are deja date; nu am adaugat reguli de acces.',
+    );
+    return;
+  }
+  const facilitati = await Facilitate.findAll();
+  const reguli = facilitati.flatMap(({ id_facilitate: idFacilitate }) =>
+    REGULI_ACCES_DEMO.map((regula) => ({
+      ...regula,
+      id_facilitate: idFacilitate,
+    })),
+  );
+  await RegulaAcces.bulkCreate(reguli);
+  console.info(`Am adaugat ${reguli.length} reguli de acces de demo.`);
 }
 
 /**
@@ -133,11 +180,13 @@ async function addSloturi() {
 }
 
 /**
- * Adauga datele de demo care lipsesc: facilitatile, conturile si sloturile.
+ * Adauga datele de demo care lipsesc: facilitatile, regulile de acces,
+ * conturile si sloturile.
  * @returns {Promise<void>}
  */
 export async function addDateDemo() {
   await addFacilitati();
+  await addReguliAcces();
   await addConturi();
   await addSloturi();
 }

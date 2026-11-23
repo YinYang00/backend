@@ -15,7 +15,7 @@ npm run setup          # .env (daca lipseste), migrarile si datele de demo
 npm run dev            # serverul pe http://localhost:3000/api/v1
 ```
 
-`npm run setup` se poate rula de oricâte ori: un `.env` existent nu se modifică, iar datele care există deja nu se adaugă din nou. Datele de demo sunt cele cinci facilități din pagina Confluence „Implementarea bazei de date”, sloturi de o oră (08:00–22:00) pentru azi și următoarele 6 zile, și două conturi:
+`npm run setup` se poate rula de oricâte ori: un `.env` existent nu se modifică, iar datele care există deja nu se adaugă din nou. Datele de demo sunt cele cinci facilități și regulile lor de acces din pagina Confluence „Implementarea bazei de date”, sloturi de o oră (08:00–22:00) pentru azi și următoarele 6 zile, și două conturi:
 
 | Cont          | E-mail                        | Parolă            | Ce poate face                               |
 | ------------- | ----------------------------- | ----------------- | ------------------------------------------- |
