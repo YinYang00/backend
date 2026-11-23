@@ -6,12 +6,13 @@ import { sequelize } from '../../config/database.js';
 import { AppError } from '../../utils/app-error.js';
 import { FUS_ORAR, toIsoRomania } from '../../utils/ora-romania.js';
 import { findFacilitateById } from '../facilitati/facilitate.service.js';
+import { STARI_ACTIVE } from '../rezervari/rezervare.model.js';
 
 const HTTP_BAD_REQUEST = 400;
 
 /**
  * Un slot asa cum iese din API. `stare` si `locuri_libere` se calculeaza
- * (ADR 0003); un slot nou nu are rezervari, deci are toate locurile libere.
+ * (ADR 0003).
  * @typedef {{id_slot: number, id_facilitate: number, ora_inceput: string,
  *   ora_sfarsit: string, stare: string, locuri_libere: number}} SlotPublic
  */
@@ -47,6 +48,22 @@ const SQL_MINUTE_REALE = `
   ) / 60 AS minute
 `;
 
+// Sloturile care incep in ziua ceruta, de la miezul noptii la miezul noptii in
+// ora Romaniei, fiecare cu numarul rezervarilor active (ADR 0003).
+const SQL_SLOTURI_ZI = `
+  SELECT s.id_slot, s.id_facilitate, s.ora_inceput, s.ora_sfarsit, s.stare,
+         COUNT(r.id_rezervare)::int AS rezervari_active
+  FROM slot s
+  LEFT JOIN rezervare r
+    ON r.id_slot = s.id_slot AND r.stare_rezervare IN (:stariActive)
+  WHERE s.id_facilitate = :idFacilitate
+    AND s.ora_inceput >= CAST(:data AS TIMESTAMP) AT TIME ZONE :fusOrar
+    AND s.ora_inceput < (CAST(:data AS TIMESTAMP) + INTERVAL '1 day')
+      AT TIME ZONE :fusOrar
+  GROUP BY s.id_slot
+  ORDER BY s.ora_inceput
+`;
+
 /**
  * Parametrii comuni ai interogarilor pentru programul unei zile.
  * @param {{data: string, ora_inceput: string, ora_sfarsit: string,
@@ -60,6 +77,30 @@ function toReplacements(programZi) {
     oraInceput: programZi.ora_inceput,
     oraSfarsit: programZi.ora_sfarsit,
     durataMinute: programZi.durata_minute,
+  };
+}
+
+/**
+ * Pastreaza datele slotului care ies din API si calculeaza ocuparea lui
+ * (ADR 0003).
+ * @param {{id_slot: number, id_facilitate: number, ora_inceput: Date,
+ *   ora_sfarsit: Date, stare: string, rezervari_active?: number}} slot Un
+ *   slot proaspat generat nu are rezervari_active, deci are toate locurile.
+ * @param {number} capacitate Capacitatea facilitatii.
+ * @returns {SlotPublic}
+ */
+function toSlotPublic(slot, capacitate) {
+  // Capacitatea poate scadea sub rezervarile deja facute; atunci slotul e
+  // doar ocupat, nu are locuri negative.
+  const locuriLibere = Math.max(0, capacitate - (slot.rezervari_active ?? 0));
+  return {
+    id_slot: slot.id_slot,
+    id_facilitate: slot.id_facilitate,
+    ora_inceput: toIsoRomania(slot.ora_inceput),
+    ora_sfarsit: toIsoRomania(slot.ora_sfarsit),
+    // Mentenanta, decizia administratorului, are prioritate fata de Ocupat.
+    stare: slot.stare === 'Liber' && locuriLibere === 0 ? 'Ocupat' : slot.stare,
+    locuri_libere: locuriLibere,
   };
 }
 
@@ -130,12 +171,28 @@ export async function createSloturi(idFacilitate, programZi) {
   }
   return sloturi
     .sort((primul, alDoilea) => primul.ora_inceput - alDoilea.ora_inceput)
-    .map((slot) => ({
-      id_slot: slot.id_slot,
-      id_facilitate: slot.id_facilitate,
-      ora_inceput: toIsoRomania(slot.ora_inceput),
-      ora_sfarsit: toIsoRomania(slot.ora_sfarsit),
-      stare: slot.stare,
-      locuri_libere: facilitate.capacitate_maxima,
-    }));
+    .map((slot) => toSlotPublic(slot, facilitate.capacitate_maxima));
+}
+
+/**
+ * Listeaza sloturile unei facilitati care incep intr-o zi, in ordinea orei.
+ * @param {number} idFacilitate
+ * @param {string} data Ziua `YYYY-MM-DD`, in ora Romaniei.
+ * @returns {Promise<SlotPublic[]>}
+ * @throws {AppError} 404 daca facilitatea nu exista.
+ */
+export async function findSloturiZi(idFacilitate, data) {
+  const facilitate = await findFacilitateById(idFacilitate);
+  const sloturi = await sequelize.query(SQL_SLOTURI_ZI, {
+    type: QueryTypes.SELECT,
+    replacements: {
+      idFacilitate,
+      data,
+      fusOrar: FUS_ORAR,
+      stariActive: STARI_ACTIVE,
+    },
+  });
+  return sloturi.map((slot) =>
+    toSlotPublic(slot, facilitate.capacitate_maxima),
+  );
 }

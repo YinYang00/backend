@@ -1,6 +1,6 @@
-// Regulile de validare pentru generarea sloturilor. Data si orele sunt in ora
-// Romaniei, ca in pagina tichetului YT-44.
-import { body } from 'express-validator';
+// Regulile de validare pentru sloturi. Data si orele sunt in ora Romaniei, ca
+// in paginile tichetelor YT-44 si YT-46.
+import { body, query } from 'express-validator';
 
 import { getAziRomania } from '../../utils/ora-romania.js';
 
@@ -17,6 +17,22 @@ const MESAJ_DATA = 'Campul data trebuie sa fie o data YYYY-MM-DD.';
 function toMinute(ora) {
   const [ore, minute] = ora.split(':').map(Number);
   return ore * MINUTE_PE_ORA + minute;
+}
+
+/**
+ * Adauga regulile pentru o data obligatorie `YYYY-MM-DD` care exista in
+ * calendar.
+ * @param {import('express-validator').ValidationChain} camp
+ * @returns {import('express-validator').ValidationChain}
+ */
+function requiredData(camp) {
+  return camp
+    .isString()
+    .withMessage(MESAJ_DATA)
+    .matches(FORMAT_DATA)
+    .withMessage(MESAJ_DATA)
+    .isISO8601({ strict: true })
+    .withMessage(MESAJ_DATA);
 }
 
 /**
@@ -50,13 +66,7 @@ function getMinuteProgram({ ora_inceput: inceput, ora_sfarsit: sfarsit }) {
 }
 
 export const generareBodyRules = [
-  body('data')
-    .isString()
-    .withMessage(MESAJ_DATA)
-    .matches(FORMAT_DATA)
-    .withMessage(MESAJ_DATA)
-    .isISO8601({ strict: true })
-    .withMessage(MESAJ_DATA)
+  requiredData(body('data'))
     // Comparatia de siruri e corecta pentru formatul YYYY-MM-DD.
     .custom((data) => data >= getAziRomania())
     .withMessage('Nu se pot genera sloturi pentru o zi din trecut.'),
@@ -77,3 +87,5 @@ export const generareBodyRules = [
     })
     .withMessage('Durata nu poate fi mai mare decat programul zilei.'),
 ];
+
+export const listareQueryRules = [requiredData(query('data'))];
