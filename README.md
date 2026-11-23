@@ -106,11 +106,12 @@ Fiecare slot din răspuns are orele în ISO 8601 cu offset, de exemplu `"ora_inc
 
 ## API – Rezervări
 
-| Metodă | Rută                              | Acces        | Răspuns                                                 |
-| ------ | --------------------------------- | ------------ | ------------------------------------------------------- |
-| `GET`  | `/api/v1/rezervari`               | autentificat | `200` rezervările proprii / `401`                       |
-| `GET`  | `/api/v1/rezervari/:id_rezervare` | autentificat | `200` rezervarea / `400` / `401` / `404`                |
-| `POST` | `/api/v1/rezervari`               | autentificat | `201` rezervarea creată / `400` / `401` / `404` / `409` |
+| Metodă | Rută                                      | Acces        | Răspuns                                                  |
+| ------ | ----------------------------------------- | ------------ | -------------------------------------------------------- |
+| `GET`  | `/api/v1/rezervari`                       | autentificat | `200` rezervările proprii / `401`                        |
+| `GET`  | `/api/v1/rezervari/:id_rezervare`         | autentificat | `200` rezervarea / `400` / `401` / `404`                 |
+| `POST` | `/api/v1/rezervari`                       | autentificat | `201` rezervarea creată / `400` / `401` / `404` / `409`  |
+| `POST` | `/api/v1/rezervari/:id_rezervare/anulare` | autentificat | `200` rezervarea anulată / `400` / `401` / `404` / `409` |
 
 `GET /rezervari` întoarce rezervările utilizatorului curent, în toate stările (și cele anulate), ordonate după `ora_inceput` a slotului, fără `cod_qr`. `GET /rezervari/:id_rezervare` întoarce o rezervare cu `cod_qr`; rezervarea altui utilizator primește `404 REZERVARE_NEGASITA`, la fel ca una inexistentă, ca să nu se afle că există. Administratorul vede orice rezervare. Un id care nu e număr pozitiv primește `400 DATE_INVALIDE`.
 
@@ -121,6 +122,11 @@ Corpul este `{ "id_slot": 15 }`. Rezervarea se face într-o tranzacție, cu rân
 - `404 SLOT_NEGASIT`: slotul nu există.
 
 Răspunsul conține `id_rezervare`, `stare_rezervare` (`Confirmata`), `cod_qr` (un UUID aleator), `data_crearii`, slotul (`id_slot`, `ora_inceput`, `ora_sfarsit`) și facilitatea (`id_facilitate`, `denumire`), cu orele în ISO 8601 cu offset.
+
+`POST /rezervari/:id_rezervare/anulare` trece rezervarea în starea `Anulata` și răspunde cu rezervarea actualizată (cu `cod_qr`). Rândul rămâne în baza de date, dar nu mai ocupă loc, deci slotul se poate rezerva din nou. Anulează proprietarul sau un administrator; rezervarea altui utilizator primește `404 REZERVARE_NEGASITA`. Rândul rezervării e blocat pe durata anulării, deci două anulări simultane nu trec amândouă.
+
+- `409 REZERVARE_INACTIVA`: rezervarea este deja `Anulata` sau `Neonorata` (se verifică prima).
+- `409 ANULARE_TARZIE`: slotul a început deja.
 
 ## Teste
 

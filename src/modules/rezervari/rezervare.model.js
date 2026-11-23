@@ -11,6 +11,9 @@ export const STARI_REZERVARE = [
   'Neonorata',
 ];
 
+/** Starea unei rezervari anulate, care nu mai ocupa loc (GLOSSARY.md, „Anulare”). */
+export const STARE_ANULATA = 'Anulata';
+
 /** Starile in care o rezervare ocupa un loc (GLOSSARY.md, „Rezervare activa”). */
 export const STARI_ACTIVE = ['Confirmata', 'PrezentaConfirmata'];
 
