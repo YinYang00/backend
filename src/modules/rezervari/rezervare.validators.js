@@ -13,7 +13,7 @@ export const idRezervareParamRules = [
 
 export const rezervareBodyRules = [
   body('id_slot')
-    .isInt({ min: 1 })
+    .isInt({ min: 1, max: MAX_ID })
     .withMessage('Id-ul slotului trebuie sa fie un numar pozitiv.')
     .toInt(),
 ];

@@ -307,6 +307,7 @@ describe('POST /rezervari', () => {
     ['lipseste id_slot', {}],
     ['id_slot nu este un numar', { id_slot: 'unu' }],
     ['id_slot nu este pozitiv', { id_slot: 0 }],
+    ['id_slot depaseste un INTEGER din PostgreSQL', { id_slot: 2147483648 }],
   ])('raspunde 400 cand %s', async (_caz, corp) => {
     const res = await postRezervare(corp);
 
