@@ -2,9 +2,34 @@
 // Erorile ajung in error-handler (Express 5 prinde erorile din async).
 import { matchedData } from 'express-validator';
 
-import { createRezervare } from './rezervare.service.js';
+import {
+  createRezervare,
+  findRezervareById,
+  findRezervariUtilizator,
+} from './rezervare.service.js';
 
 const HTTP_CREATED = 201;
+
+/**
+ * GET /rezervari
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export async function list(req, res) {
+  res.json(await findRezervariUtilizator(req.utilizator.id_utilizator));
+}
+
+/**
+ * GET /rezervari/:id_rezervare
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export async function getById(req, res) {
+  const { id_rezervare: idRezervare } = matchedData(req, {
+    locations: ['params'],
+  });
+  res.json(await findRezervareById(idRezervare, req.utilizator));
+}
 
 /**
  * POST /rezervari

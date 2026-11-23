@@ -106,9 +106,13 @@ Fiecare slot din răspuns are orele în ISO 8601 cu offset, de exemplu `"ora_inc
 
 ## API – Rezervări
 
-| Metodă | Rută                | Acces        | Răspuns                                                 |
-| ------ | ------------------- | ------------ | ------------------------------------------------------- |
-| `POST` | `/api/v1/rezervari` | autentificat | `201` rezervarea creată / `400` / `401` / `404` / `409` |
+| Metodă | Rută                              | Acces        | Răspuns                                                 |
+| ------ | --------------------------------- | ------------ | ------------------------------------------------------- |
+| `GET`  | `/api/v1/rezervari`               | autentificat | `200` rezervările proprii / `401`                       |
+| `GET`  | `/api/v1/rezervari/:id_rezervare` | autentificat | `200` rezervarea / `400` / `401` / `404`                |
+| `POST` | `/api/v1/rezervari`               | autentificat | `201` rezervarea creată / `400` / `401` / `404` / `409` |
+
+`GET /rezervari` întoarce rezervările utilizatorului curent, în toate stările (și cele anulate), ordonate după `ora_inceput` a slotului, fără `cod_qr`. `GET /rezervari/:id_rezervare` întoarce o rezervare cu `cod_qr`; rezervarea altui utilizator primește `404 REZERVARE_NEGASITA`, la fel ca una inexistentă, ca să nu se afle că există. Administratorul vede orice rezervare. Un id care nu e număr pozitiv primește `400 DATE_INVALIDE`.
 
 Corpul este `{ "id_slot": 15 }`. Rezervarea se face într-o tranzacție, cu rândul slotului blocat (`SELECT ... FOR UPDATE`, ADR 0003), deci un slot nu trece niciodată peste capacitatea facilității. Doar rezervările active (`Confirmata`, `PrezentaConfirmata`) ocupă locuri.
 
