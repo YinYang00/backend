@@ -3,7 +3,7 @@
 import { matchedData } from 'express-validator';
 
 import {
-  anuleazaRezervare,
+  cancelRezervare,
   createRezervare,
   findRezervareById,
   findRezervariUtilizator,
@@ -49,9 +49,9 @@ export async function create(req, res) {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export async function anulare(req, res) {
+export async function cancel(req, res) {
   const { id_rezervare: idRezervare } = matchedData(req, {
     locations: ['params'],
   });
-  res.json(await anuleazaRezervare(idRezervare, req.utilizator));
+  res.json(await cancelRezervare(idRezervare, req.utilizator));
 }

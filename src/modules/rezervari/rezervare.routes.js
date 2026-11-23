@@ -33,5 +33,5 @@ rezervariRouter.post(
   autentificare,
   idRezervareParamRules,
   validate,
-  controller.anulare,
+  controller.cancel,
 );

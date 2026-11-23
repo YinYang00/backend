@@ -117,7 +117,8 @@ describe('POST /rezervari/:id_rezervare/anulare', () => {
   it('permite aceluiasi utilizator sa rezerve din nou slotul dupa anulare', async () => {
     const { slot } = await createSlot();
     const rezervare = await createRezervareDirect(student, slot);
-    await postAnulare(rezervare.id_rezervare);
+    const anulare = await postAnulare(rezervare.id_rezervare);
+    expect(anulare.status).toBe(200);
 
     const res = await request(app)
       .post(URL)

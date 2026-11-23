@@ -14,12 +14,11 @@ import { AppError } from '../../utils/app-error.js';
 import { toIsoRomania } from '../../utils/ora-romania.js';
 import { createEroareNeautentificat } from '../auth/token.service.js';
 
-import { Rezervare, STARI_ACTIVE } from './rezervare.model.js';
+import { Rezervare, STARE_ANULATA, STARI_ACTIVE } from './rezervare.model.js';
 
 const HTTP_NOT_FOUND = 404;
 const HTTP_CONFLICT = 409;
 const STARE_MENTENANTA = 'Mentenanta';
-const STARE_ANULATA = 'Anulata';
 const ROL_ADMINISTRATOR = 'Administrator';
 // Constrangerea EXCLUDE din migrarea 0005: rezervarile active ale unui
 // utilizator nu se suprapun in timp, la nicio facilitate.
@@ -121,6 +120,15 @@ async function findSlotBlocat(idSlot, transaction) {
 }
 
 /**
+ * Un slot inceput nu mai primeste rezervari si nici anulari.
+ * @param {{ora_inceput: Date}} slot
+ * @returns {boolean}
+ */
+function isSlotInceput(slot) {
+  return slot.ora_inceput <= new Date();
+}
+
+/**
  * Verifica, cu slotul deja blocat, ca utilizatorul poate ocupa un loc.
  * @param {SlotBlocat} slot
  * @param {number} idUtilizator
@@ -132,7 +140,7 @@ async function assertLocDisponibil(slot, idUtilizator, transaction) {
   if (slot.stare === STARE_MENTENANTA) {
     throw createEroareSlotOcupat('Slotul este blocat pentru mentenanta.');
   }
-  if (slot.ora_inceput <= new Date()) {
+  if (isSlotInceput(slot)) {
     throw createEroareSlotOcupat('Slotul a inceput deja.');
   }
   const rezervariActive = await Rezervare.findAll({
@@ -297,7 +305,7 @@ export async function createRezervare(idUtilizator, idSlot) {
  *   (administratorul anuleaza orice rezervare); 409 REZERVARE_INACTIVA daca
  *   rezervarea nu e activa; 409 ANULARE_TARZIE daca slotul a inceput.
  */
-export async function anuleazaRezervare(idRezervare, utilizator) {
+export async function cancelRezervare(idRezervare, utilizator) {
   return sequelize.transaction(async (transaction) => {
     const [rand] = await sequelize.query(
       `${SQL_REZERVARI_CU_SLOT} WHERE r.id_rezervare = :idRezervare
@@ -312,7 +320,7 @@ export async function anuleazaRezervare(idRezervare, utilizator) {
         'Rezervarea nu mai este activa: este deja anulata sau neonorata.',
       );
     }
-    if (rand.ora_inceput <= new Date()) {
+    if (isSlotInceput(rand)) {
       throw new AppError(
         HTTP_CONFLICT,
         'ANULARE_TARZIE',
