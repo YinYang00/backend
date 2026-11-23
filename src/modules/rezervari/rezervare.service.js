@@ -46,7 +46,7 @@ const CONSTRANGERE_REZERVARE_SUPRAPUSA = 'ex_rezervare_suprapusa';
  */
 
 // Rezervarea cu slotul si facilitatea ei; cererile adauga WHERE si ORDER BY.
-const SQL_REZERVARI = `
+const SQL_REZERVARI_CU_SLOT = `
   SELECT r.id_rezervare, r.id_utilizator, r.stare_rezervare, r.cod_qr,
          r.data_crearii, s.id_slot, s.ora_inceput, s.ora_sfarsit,
          f.id_facilitate, f.denumire
@@ -192,9 +192,9 @@ function toRezervarePublica(rezervare, slot) {
  * @param {number} idUtilizator
  * @returns {Promise<RezervareListata[]>}
  */
-export async function listRezervari(idUtilizator) {
+export async function findRezervariUtilizator(idUtilizator) {
   const randuri = await sequelize.query(
-    `${SQL_REZERVARI}
+    `${SQL_REZERVARI_CU_SLOT}
      WHERE r.id_utilizator = :idUtilizator
      ORDER BY s.ora_inceput, r.id_rezervare`,
     { type: QueryTypes.SELECT, replacements: { idUtilizator } },
@@ -211,9 +211,9 @@ export async function listRezervari(idUtilizator) {
  * @throws {AppError} 404 daca rezervarea nu exista sau e a altui utilizator;
  *   raspunsul e acelasi, ca sa nu se afle ca rezervarea exista.
  */
-export async function findRezervare(idRezervare, utilizator) {
+export async function findRezervareById(idRezervare, utilizator) {
   const [rand] = await sequelize.query(
-    `${SQL_REZERVARI} WHERE r.id_rezervare = :idRezervare`,
+    `${SQL_REZERVARI_CU_SLOT} WHERE r.id_rezervare = :idRezervare`,
     { type: QueryTypes.SELECT, replacements: { idRezervare } },
   );
   const vizibila =

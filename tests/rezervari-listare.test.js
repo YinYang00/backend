@@ -117,6 +117,12 @@ describe('GET /rezervari', () => {
         denumire: 'Teren baschet',
       },
     });
+    expect(new Date(res.body[0].slot.ora_inceput)).toEqual(
+      slotMaine.ora_inceput,
+    );
+    expect(new Date(res.body[0].slot.ora_sfarsit)).toEqual(
+      slotMaine.ora_sfarsit,
+    );
   });
 
   it('raspunde 401 fara token', async () => {
@@ -197,6 +203,7 @@ describe('GET /rezervari/:id_rezervare', () => {
   it.each([
     ['nu este un numar', '/unu'],
     ['nu este pozitiv', '/0'],
+    ['depaseste un INTEGER din PostgreSQL', '/2147483648'],
   ])('raspunde 400 cand id-ul %s', async (_caz, cale) => {
     const res = await getRezervari(cale);
 

@@ -4,8 +4,8 @@ import { matchedData } from 'express-validator';
 
 import {
   createRezervare,
-  findRezervare,
-  listRezervari,
+  findRezervareById,
+  findRezervariUtilizator,
 } from './rezervare.service.js';
 
 const HTTP_CREATED = 201;
@@ -16,7 +16,7 @@ const HTTP_CREATED = 201;
  * @param {import('express').Response} res
  */
 export async function list(req, res) {
-  res.json(await listRezervari(req.utilizator.id_utilizator));
+  res.json(await findRezervariUtilizator(req.utilizator.id_utilizator));
 }
 
 /**
@@ -28,7 +28,7 @@ export async function getById(req, res) {
   const { id_rezervare: idRezervare } = matchedData(req, {
     locations: ['params'],
   });
-  res.json(await findRezervare(idRezervare, req.utilizator));
+  res.json(await findRezervareById(idRezervare, req.utilizator));
 }
 
 /**
