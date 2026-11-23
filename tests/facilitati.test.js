@@ -72,6 +72,13 @@ describe('GET /facilitati/:id_facilitate', () => {
     expect(res.status).toBe(400);
     expect(res.body.cod).toBe('DATE_INVALIDE');
   });
+
+  it('raspunde 400 pentru un id mai mare decat un INTEGER din PostgreSQL', async () => {
+    const res = await request(app).get(`${URL}/2147483648`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.cod).toBe('DATE_INVALIDE');
+  });
 });
 
 describe('POST /facilitati', () => {

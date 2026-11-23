@@ -5,6 +5,8 @@ import { body, param } from 'express-validator';
 const MAX_DENUMIRE = 100;
 const MAX_TIP = 50;
 const MAX_LOCATIE = 150;
+// Cel mai mare id pe care il poate avea o coloana SERIAL (INTEGER) din PostgreSQL.
+const MAX_ID = 2147483647;
 
 /**
  * Valideaza un camp text obligatoriu cu lungime maxima.
@@ -25,7 +27,7 @@ function requiredText(camp, max) {
 
 export const idParamRules = [
   param('id_facilitate')
-    .isInt({ min: 1 })
+    .isInt({ min: 1, max: MAX_ID })
     .withMessage('Id-ul facilitatii trebuie sa fie un numar pozitiv.')
     .toInt(),
 ];

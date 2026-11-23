@@ -180,6 +180,13 @@ describe('GET /facilitati/:id_facilitate/sloturi', () => {
     });
   });
 
+  it('raspunde 400 pentru un id de facilitate mai mare decat un INTEGER', async () => {
+    const res = await getSloturi(2147483648, { data: ZI_VIITOARE });
+
+    expect(res.status).toBe(400);
+    expect(res.body.cod).toBe('DATE_INVALIDE');
+  });
+
   it('raspunde 404 pentru o facilitate inexistenta', async () => {
     const res = await getSloturi(999, { data: ZI_VIITOARE });
 
