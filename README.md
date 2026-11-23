@@ -104,6 +104,28 @@ Erorile au formatul `{ "cod": "FACILITATE_NEGASITA", "mesaj": "..." }`.
 
 Fiecare slot din răspuns are orele în ISO 8601 cu offset, de exemplu `"ora_inceput": "2026-11-20T08:00:00+02:00"`, plus `stare` și `locuri_libere`. Un slot nou are `stare: "Liber"` și toate locurile libere (`locuri_libere` este capacitatea facilității); la listarea sloturilor, ocuparea se calculează din rezervări (ADR 0003).
 
+## API – Reguli de acces
+
+| Metodă | Rută                                             | Acces         | Răspuns                                                |
+| ------ | ------------------------------------------------ | ------------- | ------------------------------------------------------ |
+| `GET`  | `/api/v1/facilitati/:id_facilitate/reguli-acces` | administrator | `200` regulile facilității / `401` / `403` / `404`     |
+| `PUT`  | `/api/v1/facilitati/:id_facilitate/reguli-acces` | administrator | `200` regulile salvate / `400` / `401` / `403` / `404` |
+
+O regulă de acces limitează o categorie de utilizatori la o facilitate; o categorie fără regulă nu are limite. `GET` întoarce cel mult o regulă pe categorie, în ordinea `Student`, `CadruDidactic`, `PersonalAdministrativ`.
+
+`PUT` primește lista completă de reguli și le înlocuiește pe cele vechi într-o tranzacție; lista goală le șterge pe toate. O categorie necunoscută sau repetată, `ore_maxim_saptamana` în afara intervalului 1–168, `prioritate` în afara 1–5 sau `zile_avans_maxim` în afara 1–30 primesc `400 DATE_INVALIDE`, iar regulile vechi rămân. `prioritate` se salvează, dar nu se folosește încă la rezervare.
+
+```json
+[
+  {
+    "categorie_utilizator": "Student",
+    "ore_maxim_saptamana": 6,
+    "prioritate": 2,
+    "zile_avans_maxim": 7
+  }
+]
+```
+
 ## API – Rezervări
 
 | Metodă | Rută                                      | Acces        | Răspuns                                                  |
