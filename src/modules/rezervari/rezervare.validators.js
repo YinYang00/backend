@@ -1,5 +1,12 @@
 // Regulile de validare pentru rutele de rezervari.
-import { body } from 'express-validator';
+import { body, param } from 'express-validator';
+
+export const idRezervareParamRules = [
+  param('id_rezervare')
+    .isInt({ min: 1 })
+    .withMessage('Id-ul rezervarii trebuie sa fie un numar pozitiv.')
+    .toInt(),
+];
 
 export const rezervareBodyRules = [
   body('id_slot')

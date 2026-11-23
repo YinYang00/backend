@@ -19,17 +19,41 @@ import { Rezervare, STARI_ACTIVE } from './rezervare.model.js';
 const HTTP_NOT_FOUND = 404;
 const HTTP_CONFLICT = 409;
 const STARE_MENTENANTA = 'Mentenanta';
+const ROL_ADMINISTRATOR = 'Administrator';
 // Constrangerea EXCLUDE din migrarea 0005: rezervarile active ale unui
 // utilizator nu se suprapun in timp, la nicio facilitate.
 const CONSTRANGERE_REZERVARE_SUPRAPUSA = 'ex_rezervare_suprapusa';
 
 /**
- * O rezervare asa cum iese din API.
- * @typedef {{id_rezervare: number, stare_rezervare: string, cod_qr: string,
+ * O rezervare din lista utilizatorului, fara codul QR.
+ * @typedef {{id_rezervare: number, stare_rezervare: string,
  *   data_crearii: string,
  *   slot: {id_slot: number, ora_inceput: string, ora_sfarsit: string},
- *   facilitate: {id_facilitate: number, denumire: string}}} RezervarePublica
+ *   facilitate: {id_facilitate: number, denumire: string}}} RezervareListata
  */
+
+/**
+ * O rezervare asa cum iese din API, cu codul QR.
+ * @typedef {RezervareListata & {cod_qr: string}} RezervarePublica
+ */
+
+/**
+ * O rezervare citita din baza, impreuna cu slotul si facilitatea ei.
+ * @typedef {{id_rezervare: number, id_utilizator: number,
+ *   stare_rezervare: string, cod_qr: string, data_crearii: Date,
+ *   id_slot: number, ora_inceput: Date, ora_sfarsit: Date,
+ *   id_facilitate: number, denumire: string}} RandRezervare
+ */
+
+// Rezervarea cu slotul si facilitatea ei; cererile adauga WHERE si ORDER BY.
+const SQL_REZERVARI = `
+  SELECT r.id_rezervare, r.id_utilizator, r.stare_rezervare, r.cod_qr,
+         r.data_crearii, s.id_slot, s.ora_inceput, s.ora_sfarsit,
+         f.id_facilitate, f.denumire
+  FROM rezervare r
+  JOIN slot s ON s.id_slot = r.id_slot
+  JOIN facilitate f ON f.id_facilitate = s.id_facilitate
+`;
 
 /**
  * Randul slotului blocat, impreuna cu facilitatea lui.
@@ -131,16 +155,15 @@ async function assertLocDisponibil(slot, idUtilizator, transaction) {
 }
 
 /**
- * Pastreaza datele rezervarii care ies din API.
- * @param {Rezervare} rezervare
- * @param {SlotBlocat} slot
- * @returns {RezervarePublica}
+ * Pastreaza datele rezervarii care apar in lista, fara codul QR.
+ * @param {Rezervare | RandRezervare} rezervare
+ * @param {SlotBlocat | RandRezervare} slot
+ * @returns {RezervareListata}
  */
-function toRezervarePublica(rezervare, slot) {
+function toRezervareListata(rezervare, slot) {
   return {
     id_rezervare: rezervare.id_rezervare,
     stare_rezervare: rezervare.stare_rezervare,
-    cod_qr: rezervare.cod_qr,
     data_crearii: toIsoRomania(rezervare.data_crearii),
     slot: {
       id_slot: slot.id_slot,
@@ -152,6 +175,59 @@ function toRezervarePublica(rezervare, slot) {
       denumire: slot.denumire,
     },
   };
+}
+
+/**
+ * Pastreaza datele rezervarii care ies din API, cu codul QR.
+ * @param {Rezervare | RandRezervare} rezervare
+ * @param {SlotBlocat | RandRezervare} slot
+ * @returns {RezervarePublica}
+ */
+function toRezervarePublica(rezervare, slot) {
+  return { ...toRezervareListata(rezervare, slot), cod_qr: rezervare.cod_qr };
+}
+
+/**
+ * Rezervarile utilizatorului, in toate starile, ordonate dupa ora slotului.
+ * @param {number} idUtilizator
+ * @returns {Promise<RezervareListata[]>}
+ */
+export async function listRezervari(idUtilizator) {
+  const randuri = await sequelize.query(
+    `${SQL_REZERVARI}
+     WHERE r.id_utilizator = :idUtilizator
+     ORDER BY s.ora_inceput, r.id_rezervare`,
+    { type: QueryTypes.SELECT, replacements: { idUtilizator } },
+  );
+  return randuri.map((rand) => toRezervareListata(rand, rand));
+}
+
+/**
+ * O rezervare, cu codul QR. Utilizatorul isi vede doar rezervarile proprii;
+ * administratorul vede orice rezervare.
+ * @param {number} idRezervare
+ * @param {{id_utilizator: number, rol: string}} utilizator utilizatorul curent
+ * @returns {Promise<RezervarePublica>}
+ * @throws {AppError} 404 daca rezervarea nu exista sau e a altui utilizator;
+ *   raspunsul e acelasi, ca sa nu se afle ca rezervarea exista.
+ */
+export async function findRezervare(idRezervare, utilizator) {
+  const [rand] = await sequelize.query(
+    `${SQL_REZERVARI} WHERE r.id_rezervare = :idRezervare`,
+    { type: QueryTypes.SELECT, replacements: { idRezervare } },
+  );
+  const vizibila =
+    rand &&
+    (utilizator.rol === ROL_ADMINISTRATOR ||
+      rand.id_utilizator === utilizator.id_utilizator);
+  if (!vizibila) {
+    throw new AppError(
+      HTTP_NOT_FOUND,
+      'REZERVARE_NEGASITA',
+      `Rezervarea cu id ${idRezervare} nu exista.`,
+    );
+  }
+  return toRezervarePublica(rand, rand);
 }
 
 /**
