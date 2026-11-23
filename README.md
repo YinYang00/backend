@@ -110,7 +110,7 @@ Fiecare slot din răspuns are orele în ISO 8601 cu offset, de exemplu `"ora_inc
 Corpul este `{ "id_slot": 15 }`. Rezervarea se face într-o tranzacție, cu rândul slotului blocat (`SELECT ... FOR UPDATE`, ADR 0003), deci un slot nu trece niciodată peste capacitatea facilității. Doar rezervările active (`Confirmata`, `PrezentaConfirmata`) ocupă locuri.
 
 - `409 SLOT_OCUPAT`: slotul este în mentenanță, a început deja sau nu mai are locuri libere.
-- `409 REZERVARE_SUPRAPUSA`: utilizatorul are deja o rezervare activă pe acest slot.
+- `409 REZERVARE_SUPRAPUSA`: utilizatorul are deja o rezervare activă suprapusă în timp, pe acest slot sau la altă facilitate. O garantează constrângerea `EXCLUDE USING gist` `ex_rezervare_suprapusa` (migrarea 0005), chiar și pentru cereri trimise în paralel; o rezervare anulată nu blochează.
 - `404 SLOT_NEGASIT`: slotul nu există.
 
 Răspunsul conține `id_rezervare`, `stare_rezervare` (`Confirmata`), `cod_qr` (un UUID aleator), `data_crearii`, slotul (`id_slot`, `ora_inceput`, `ora_sfarsit`) și facilitatea (`id_facilitate`, `denumire`), cu orele în ISO 8601 cu offset.
