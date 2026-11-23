@@ -3,6 +3,7 @@
 import { matchedData } from 'express-validator';
 
 import {
+  anuleazaRezervare,
   createRezervare,
   findRezervareById,
   findRezervariUtilizator,
@@ -41,4 +42,16 @@ export async function create(req, res) {
   res
     .status(HTTP_CREATED)
     .json(await createRezervare(req.utilizator.id_utilizator, idSlot));
+}
+
+/**
+ * POST /rezervari/:id_rezervare/anulare
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export async function anulare(req, res) {
+  const { id_rezervare: idRezervare } = matchedData(req, {
+    locations: ['params'],
+  });
+  res.json(await anuleazaRezervare(idRezervare, req.utilizator));
 }

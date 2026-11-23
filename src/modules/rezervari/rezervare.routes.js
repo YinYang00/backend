@@ -27,3 +27,11 @@ rezervariRouter.post(
   validate,
   controller.create,
 );
+
+rezervariRouter.post(
+  '/:id_rezervare/anulare',
+  autentificare,
+  idRezervareParamRules,
+  validate,
+  controller.anulare,
+);

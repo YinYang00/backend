@@ -19,6 +19,7 @@ import { Rezervare, STARI_ACTIVE } from './rezervare.model.js';
 const HTTP_NOT_FOUND = 404;
 const HTTP_CONFLICT = 409;
 const STARE_MENTENANTA = 'Mentenanta';
+const STARE_ANULATA = 'Anulata';
 const ROL_ADMINISTRATOR = 'Administrator';
 // Constrangerea EXCLUDE din migrarea 0005: rezervarile active ale unui
 // utilizator nu se suprapun in timp, la nicio facilitate.
@@ -188,6 +189,30 @@ function toRezervarePublica(rezervare, slot) {
 }
 
 /**
+ * Verifica ca utilizatorul curent poate vedea rezervarea: a lui, sau orice
+ * rezervare pentru administrator.
+ * @param {RandRezervare | undefined} rand rezervarea citita din baza
+ * @param {number} idRezervare
+ * @param {{id_utilizator: number, rol: string}} utilizator utilizatorul curent
+ * @returns {void}
+ * @throws {AppError} 404 daca rezervarea nu exista sau e a altui utilizator;
+ *   raspunsul e acelasi, ca sa nu se afle ca rezervarea exista.
+ */
+function assertRezervareVizibila(rand, idRezervare, utilizator) {
+  const vizibila =
+    rand &&
+    (utilizator.rol === ROL_ADMINISTRATOR ||
+      rand.id_utilizator === utilizator.id_utilizator);
+  if (!vizibila) {
+    throw new AppError(
+      HTTP_NOT_FOUND,
+      'REZERVARE_NEGASITA',
+      `Rezervarea cu id ${idRezervare} nu exista.`,
+    );
+  }
+}
+
+/**
  * Rezervarile utilizatorului, in toate starile, ordonate dupa ora slotului.
  * @param {number} idUtilizator
  * @returns {Promise<RezervareListata[]>}
@@ -216,17 +241,7 @@ export async function findRezervareById(idRezervare, utilizator) {
     `${SQL_REZERVARI_CU_SLOT} WHERE r.id_rezervare = :idRezervare`,
     { type: QueryTypes.SELECT, replacements: { idRezervare } },
   );
-  const vizibila =
-    rand &&
-    (utilizator.rol === ROL_ADMINISTRATOR ||
-      rand.id_utilizator === utilizator.id_utilizator);
-  if (!vizibila) {
-    throw new AppError(
-      HTTP_NOT_FOUND,
-      'REZERVARE_NEGASITA',
-      `Rezervarea cu id ${idRezervare} nu exista.`,
-    );
-  }
+  assertRezervareVizibila(rand, idRezervare, utilizator);
   return toRezervarePublica(rand, rand);
 }
 
@@ -269,4 +284,48 @@ export async function createRezervare(idUtilizator, idSlot) {
     }
     throw err;
   }
+}
+
+/**
+ * Anuleaza o rezervare: trece in starea Anulata si nu mai ocupa loc. Randul
+ * rezervarii ramane blocat pana la sfarsitul tranzactiei, deci doua anulari
+ * simultane nu trec amandoua.
+ * @param {number} idRezervare
+ * @param {{id_utilizator: number, rol: string}} utilizator utilizatorul curent
+ * @returns {Promise<RezervarePublica>}
+ * @throws {AppError} 404 daca rezervarea nu exista sau e a altui utilizator
+ *   (administratorul anuleaza orice rezervare); 409 REZERVARE_INACTIVA daca
+ *   rezervarea nu e activa; 409 ANULARE_TARZIE daca slotul a inceput.
+ */
+export async function anuleazaRezervare(idRezervare, utilizator) {
+  return sequelize.transaction(async (transaction) => {
+    const [rand] = await sequelize.query(
+      `${SQL_REZERVARI_CU_SLOT} WHERE r.id_rezervare = :idRezervare
+       FOR UPDATE OF r`,
+      { type: QueryTypes.SELECT, replacements: { idRezervare }, transaction },
+    );
+    assertRezervareVizibila(rand, idRezervare, utilizator);
+    if (!STARI_ACTIVE.includes(rand.stare_rezervare)) {
+      throw new AppError(
+        HTTP_CONFLICT,
+        'REZERVARE_INACTIVA',
+        'Rezervarea nu mai este activa: este deja anulata sau neonorata.',
+      );
+    }
+    if (rand.ora_inceput <= new Date()) {
+      throw new AppError(
+        HTTP_CONFLICT,
+        'ANULARE_TARZIE',
+        'Rezervarea nu se mai poate anula: slotul a inceput deja.',
+      );
+    }
+    await Rezervare.update(
+      { stare_rezervare: STARE_ANULATA },
+      { where: { id_rezervare: idRezervare }, transaction },
+    );
+    return toRezervarePublica(
+      { ...rand, stare_rezervare: STARE_ANULATA },
+      rand,
+    );
+  });
 }
