@@ -37,11 +37,14 @@ export async function findAllFacilitati() {
 /**
  * Cauta o facilitate dupa id.
  * @param {number} id
+ * @param {{transaction?: import('sequelize').Transaction,
+ *   lock?: boolean}} [optiuni] In tranzactie, `lock` blocheaza randul
+ *   (`SELECT ... FOR UPDATE`) pana la sfarsitul ei.
  * @returns {Promise<Facilitate>}
  * @throws {AppError} 404 daca facilitatea nu exista.
  */
-export async function findFacilitateById(id) {
-  const facilitate = await Facilitate.findByPk(id);
+export async function findFacilitateById(id, optiuni = {}) {
+  const facilitate = await Facilitate.findByPk(id, optiuni);
   if (!facilitate) {
     throw new AppError(
       HTTP_NOT_FOUND,

@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { addDateDemo } from '../scripts/date-demo.js';
 import { createApp } from '../src/app.js';
 import { Facilitate } from '../src/modules/facilitati/facilitate.model.js';
+import { RegulaAcces } from '../src/modules/reguli-acces/regula-acces.model.js';
 import { Slot } from '../src/modules/sloturi/slot.model.js';
 import { Utilizator } from '../src/modules/utilizatori/utilizator.model.js';
 
@@ -64,6 +65,40 @@ describe('date de demo', () => {
     expect(res.status).toBe(201);
   });
 
+  it('fiecare facilitate are regulile de acces din Confluence', async () => {
+    await addDateDemo();
+    const { body } = await login(ADMIN);
+    const facilitati = await request(app).get('/api/v1/facilitati');
+
+    const res = await request(app)
+      .get(
+        `/api/v1/facilitati/${facilitati.body[0].id_facilitate}/reguli-acces`,
+      )
+      .set('Authorization', `Bearer ${body.token}`);
+
+    // Pagina Confluence „Implementarea bazei de date”, INSERT INTO regula_acces.
+    expect(res.body).toEqual([
+      {
+        categorie_utilizator: 'Student',
+        ore_maxim_saptamana: 6,
+        prioritate: 2,
+        zile_avans_maxim: 7,
+      },
+      {
+        categorie_utilizator: 'CadruDidactic',
+        ore_maxim_saptamana: 8,
+        prioritate: 1,
+        zile_avans_maxim: 14,
+      },
+      {
+        categorie_utilizator: 'PersonalAdministrativ',
+        ore_maxim_saptamana: 4,
+        prioritate: 3,
+        zile_avans_maxim: 7,
+      },
+    ]);
+  });
+
   it('acopera 7 zile, iar a doua rulare nu schimba nimic', async () => {
     await addDateDemo();
     const dupaPrima = await countRanduri();
@@ -71,20 +106,27 @@ describe('date de demo', () => {
     await addDateDemo();
 
     expect(await countRanduri()).toEqual(dupaPrima);
-    // 5 facilitati, 14 sloturi de cate o ora (08:00-22:00), 7 zile.
-    expect(dupaPrima).toEqual({ facilitati: 5, utilizatori: 2, sloturi: 490 });
+    // 5 facilitati, 14 sloturi de cate o ora (08:00-22:00), 7 zile; 3 reguli
+    // de acces pe facilitate.
+    expect(dupaPrima).toEqual({
+      facilitati: 5,
+      utilizatori: 2,
+      sloturi: 490,
+      reguli: 15,
+    });
   });
 });
 
 /**
  * Cate randuri au tabelele pe care le completeaza datele de demo.
  * @returns {Promise<{facilitati: number, utilizatori: number,
- *   sloturi: number}>}
+ *   sloturi: number, reguli: number}>}
  */
 async function countRanduri() {
   return {
     facilitati: await Facilitate.count(),
     utilizatori: await Utilizator.count(),
     sloturi: await Slot.count(),
+    reguli: await RegulaAcces.count(),
   };
 }
