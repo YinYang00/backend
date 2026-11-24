@@ -157,6 +157,21 @@ Răspunsul conține `id_rezervare`, `stare_rezervare` (`Confirmata`), `cod_qr` (
 - `409 REZERVARE_INACTIVA`: rezervarea este deja `Anulata` sau `Neonorata` (se verifică prima).
 - `409 ANULARE_TARZIE`: slotul a început deja.
 
+## API – Evenimente
+
+| Metodă | Rută                 | Acces  | Răspuns                                 |
+| ------ | -------------------- | ------ | --------------------------------------- |
+| `GET`  | `/api/v1/evenimente` | public | `200` flux `text/event-stream`, deschis |
+
+Fluxul Server-Sent Events rămâne deschis și trimite evenimentul `slot-actualizat` după fiecare rezervare, anulare și blocare sau deblocare pentru mentenanță, după ce tranzacția s-a încheiat. Datele sunt starea slotului calculată după schimbare, ca la listarea sloturilor; interfața filtrează după `id_facilitate`. O cerere refuzată (`409`, `422`) nu trimite nimic. Un comentariu `: ping` la 25 de secunde ține conexiunea deschisă prin proxy-uri.
+
+```text
+event: slot-actualizat
+data: {"id_slot":15,"id_facilitate":5,"stare":"Liber","locuri_libere":1}
+```
+
+Lista conexiunilor e în memorie, deci evenimentele ajung doar la clienții aceluiași proces de server.
+
 ## Teste
 
 Testele rulează pe o bază de date separată, al cărei nume trebuie să se termine în `_test`:
