@@ -91,7 +91,7 @@ if (facilitate.capacitate_maxima > 1)
   { "cod": "FACILITATE_NEGASITA", "mesaj": "Facilitatea cu id 7 nu exista." }
   ```
 
-- Codurile HTTP folosite: `200` citire sau modificare, `201` creare, `204` ștergere, `400` date invalide, `401`/`403` autentificare și rol, `404` negăsit, `409` conflict (de exemplu denumire duplicată), `500` eroare neprevăzută.
+- Codurile HTTP folosite: `200` citire sau modificare, `201` creare, `204` ștergere, `400` date invalide, `401`/`403` autentificare și rol, `404` negăsit, `409` conflict (de exemplu denumire duplicată), `422` regulă de acces încălcată, `500` eroare neprevăzută.
 - O eroare neprevăzută (`500`) se scrie în log cu `console.error`. Clientul primește doar un mesaj generic, fără stack trace sau detalii SQL.
 - Blocurile `catch` goale sunt interzise. `console.log` este interzis în cod; pentru loguri se folosesc `console.info`, `console.warn` și `console.error`.
 - Datele de intrare se validează cu `express-validator` în fișierul `*.validators.js` al modulului, înainte să ajungă în controller.
