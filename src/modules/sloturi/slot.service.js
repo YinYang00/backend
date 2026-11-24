@@ -1,12 +1,19 @@
 // Regulile pentru sloturi. Serviciul nu cunoaste req/res: primeste date simple
 // si arunca AppError pentru situatiile prevazute.
-import { ForeignKeyConstraintError, QueryTypes } from 'sequelize';
+import { ForeignKeyConstraintError, Op, QueryTypes } from 'sequelize';
 
 import { sequelize } from '../../config/database.js';
 import { AppError } from '../../utils/app-error.js';
 import { FUS_ORAR, toIsoRomania } from '../../utils/ora-romania.js';
 import { findFacilitateById } from '../facilitati/facilitate.service.js';
-import { STARI_ACTIVE } from '../rezervari/rezervare.model.js';
+import {
+  Rezervare,
+  STARE_ANULATA,
+  STARI_ACTIVE,
+} from '../rezervari/rezervare.model.js';
+import { findSlotBlocat } from '../rezervari/rezervare.service.js';
+
+import { Slot } from './slot.model.js';
 
 const HTTP_BAD_REQUEST = 400;
 
@@ -195,4 +202,39 @@ export async function findSloturiZi(idFacilitate, data) {
   return sloturi.map((slot) =>
     toSlotPublic(slot, facilitate.capacitate_maxima),
   );
+}
+
+/**
+ * Blocheaza un slot pentru mentenanta sau il deblocheaza. Blocarea anuleaza
+ * rezervarile active ale slotului, in aceeasi tranzactie; deblocarea nu le
+ * reface. Randul slotului ramane blocat pana la sfarsit, ca o rezervare
+ * simultana sa vada starea noua (ADR 0003).
+ * @param {number} idSlot
+ * @param {'Mentenanta' | 'Liber'} stare
+ * @returns {Promise<SlotPublic>}
+ * @throws {AppError} 404 daca slotul nu exista.
+ */
+export async function updateStareSlot(idSlot, stare) {
+  return sequelize.transaction(async (transaction) => {
+    const slot = await findSlotBlocat(idSlot, transaction);
+    await Slot.update({ stare }, { where: { id_slot: idSlot }, transaction });
+    const rezervariActive = {
+      id_slot: idSlot,
+      stare_rezervare: { [Op.in]: STARI_ACTIVE },
+    };
+    if (stare === 'Mentenanta') {
+      await Rezervare.update(
+        { stare_rezervare: STARE_ANULATA },
+        { where: rezervariActive, transaction },
+      );
+    }
+    const rezervariRamase = await Rezervare.count({
+      where: rezervariActive,
+      transaction,
+    });
+    return toSlotPublic(
+      { ...slot, stare, rezervari_active: rezervariRamase },
+      slot.capacitate_maxima,
+    );
+  });
 }
