@@ -2,6 +2,8 @@
 // Erorile ajung in error-handler (Express 5 prinde erorile din async).
 import { matchedData } from 'express-validator';
 
+import { publishSlotActualizat } from '../evenimente/eveniment.service.js';
+
 import {
   cancelRezervare,
   createRezervare,
@@ -39,9 +41,9 @@ export async function getById(req, res) {
  */
 export async function create(req, res) {
   const { id_slot: idSlot } = matchedData(req, { locations: ['body'] });
-  res
-    .status(HTTP_CREATED)
-    .json(await createRezervare(req.utilizator.id_utilizator, idSlot));
+  const rezervare = await createRezervare(req.utilizator.id_utilizator, idSlot);
+  await publishSlotActualizat(idSlot);
+  res.status(HTTP_CREATED).json(rezervare);
 }
 
 /**
@@ -53,5 +55,7 @@ export async function cancel(req, res) {
   const { id_rezervare: idRezervare } = matchedData(req, {
     locations: ['params'],
   });
-  res.json(await cancelRezervare(idRezervare, req.utilizator));
+  const rezervare = await cancelRezervare(idRezervare, req.utilizator);
+  await publishSlotActualizat(rezervare.slot.id_slot);
+  res.json(rezervare);
 }

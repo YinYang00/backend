@@ -71,6 +71,18 @@ const SQL_SLOTURI_ZI = `
   ORDER BY s.ora_inceput
 `;
 
+// Un slot cu capacitatea facilitatii si numarul rezervarilor active.
+const SQL_SLOT_CU_OCUPARE = `
+  SELECT s.id_slot, s.id_facilitate, s.ora_inceput, s.ora_sfarsit, s.stare,
+         f.capacitate_maxima, COUNT(r.id_rezervare)::int AS rezervari_active
+  FROM slot s
+  JOIN facilitate f ON f.id_facilitate = s.id_facilitate
+  LEFT JOIN rezervare r
+    ON r.id_slot = s.id_slot AND r.stare_rezervare IN (:stariActive)
+  WHERE s.id_slot = :idSlot
+  GROUP BY s.id_slot, f.capacitate_maxima
+`;
+
 /**
  * Parametrii comuni ai interogarilor pentru programul unei zile.
  * @param {{data: string, ora_inceput: string, ora_sfarsit: string,
@@ -237,4 +249,17 @@ export async function updateStareSlot(idSlot, stare) {
       slot.capacitate_maxima,
     );
   });
+}
+
+/**
+ * Starea curenta a unui slot, cu ocuparea calculata (ADR 0003).
+ * @param {number} idSlot
+ * @returns {Promise<SlotPublic | undefined>} undefined daca slotul nu exista.
+ */
+export async function findSlotPublic(idSlot) {
+  const [slot] = await sequelize.query(SQL_SLOT_CU_OCUPARE, {
+    type: QueryTypes.SELECT,
+    replacements: { idSlot, stariActive: STARI_ACTIVE },
+  });
+  return slot && toSlotPublic(slot, slot.capacitate_maxima);
 }

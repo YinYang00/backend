@@ -2,6 +2,8 @@
 // Erorile ajung in error-handler (Express 5 prinde erorile din async).
 import { matchedData } from 'express-validator';
 
+import { publishSlotActualizat } from '../evenimente/eveniment.service.js';
+
 import {
   createSloturi,
   findSloturiZi,
@@ -40,5 +42,7 @@ export async function list(req, res) {
 export async function update(req, res) {
   const { id_slot: id } = matchedData(req, { locations: ['params'] });
   const { stare } = matchedData(req, { locations: ['body'] });
-  res.json(await updateStareSlot(id, stare));
+  const slot = await updateStareSlot(id, stare);
+  await publishSlotActualizat(id);
+  res.json(slot);
 }
