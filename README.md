@@ -128,12 +128,12 @@ O regulă de acces limitează o categorie de utilizatori la o facilitate; o cate
 
 ## API – Rezervări
 
-| Metodă | Rută                                      | Acces        | Răspuns                                                  |
-| ------ | ----------------------------------------- | ------------ | -------------------------------------------------------- |
-| `GET`  | `/api/v1/rezervari`                       | autentificat | `200` rezervările proprii / `401`                        |
-| `GET`  | `/api/v1/rezervari/:id_rezervare`         | autentificat | `200` rezervarea / `400` / `401` / `404`                 |
-| `POST` | `/api/v1/rezervari`                       | autentificat | `201` rezervarea creată / `400` / `401` / `404` / `409`  |
-| `POST` | `/api/v1/rezervari/:id_rezervare/anulare` | autentificat | `200` rezervarea anulată / `400` / `401` / `404` / `409` |
+| Metodă | Rută                                      | Acces        | Răspuns                                                         |
+| ------ | ----------------------------------------- | ------------ | --------------------------------------------------------------- |
+| `GET`  | `/api/v1/rezervari`                       | autentificat | `200` rezervările proprii / `401`                               |
+| `GET`  | `/api/v1/rezervari/:id_rezervare`         | autentificat | `200` rezervarea / `400` / `401` / `404`                        |
+| `POST` | `/api/v1/rezervari`                       | autentificat | `201` rezervarea creată / `400` / `401` / `404` / `409` / `422` |
+| `POST` | `/api/v1/rezervari/:id_rezervare/anulare` | autentificat | `200` rezervarea anulată / `400` / `401` / `404` / `409`        |
 
 `GET /rezervari` întoarce rezervările utilizatorului curent, în toate stările (și cele anulate), ordonate după `ora_inceput` a slotului, fără `cod_qr`. `GET /rezervari/:id_rezervare` întoarce o rezervare cu `cod_qr`; rezervarea altui utilizator primește `404 REZERVARE_NEGASITA`, la fel ca una inexistentă, ca să nu se afle că există. Administratorul vede orice rezervare. Un id care nu e număr pozitiv primește `400 DATE_INVALIDE`.
 
@@ -142,6 +142,10 @@ Corpul este `{ "id_slot": 15 }`. Rezervarea se face într-o tranzacție, cu rân
 - `409 SLOT_OCUPAT`: slotul este în mentenanță, a început deja sau nu mai are locuri libere.
 - `409 REZERVARE_SUPRAPUSA`: utilizatorul are deja o rezervare activă suprapusă în timp, pe acest slot sau la altă facilitate. O garantează constrângerea `EXCLUDE USING gist` `ex_rezervare_suprapusa` (migrarea 0005), chiar și pentru cereri trimise în paralel; o rezervare anulată nu blochează.
 - `404 SLOT_NEGASIT`: slotul nu există.
+- `422 PREA_DEVREME`: slotul începe mai târziu de `zile_avans_maxim` zile de acum.
+- `422 LIMITA_SAPTAMANALA`: duratele rezervărilor active ale utilizatorului la aceeași facilitate, în săptămâna slotului (luni–duminică, ora României), plus slotul cerut, depășesc `ore_maxim_saptamana`. Rândul utilizatorului e blocat pe durata rezervării, deci nici cererile trimise în paralel nu trec împreună peste limită.
+
+Cele două coduri `422` vin din regula de acces a facilității pentru categoria utilizatorului; fără regulă, nu există limite.
 
 Răspunsul conține `id_rezervare`, `stare_rezervare` (`Confirmata`), `cod_qr` (un UUID aleator), `data_crearii`, slotul (`id_slot`, `ora_inceput`, `ora_sfarsit`) și facilitatea (`id_facilitate`, `denumire`), cu orele în ISO 8601 cu offset.
 

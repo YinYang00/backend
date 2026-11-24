@@ -2,18 +2,13 @@
 // simple si arunca AppError pentru situatiile prevazute.
 import { randomUUID } from 'node:crypto';
 
-import {
-  ExclusionConstraintError,
-  ForeignKeyConstraintError,
-  Op,
-  QueryTypes,
-} from 'sequelize';
+import { ExclusionConstraintError, Op, QueryTypes } from 'sequelize';
 
 import { sequelize } from '../../config/database.js';
 import { AppError } from '../../utils/app-error.js';
 import { toIsoRomania } from '../../utils/ora-romania.js';
-import { createEroareNeautentificat } from '../auth/token.service.js';
 
+import { assertLimiteAcces } from './limite-acces.service.js';
 import { Rezervare, STARE_ANULATA, STARI_ACTIVE } from './rezervare.model.js';
 
 const HTTP_NOT_FOUND = 404;
@@ -262,13 +257,15 @@ export async function findRezervareById(idRezervare, utilizator) {
  * @throws {AppError} 401 daca contul utilizatorului nu mai exista; 404 daca
  *   slotul nu exista; 409 SLOT_OCUPAT daca slotul e in mentenanta, a inceput
  *   sau e plin; 409 REZERVARE_SUPRAPUSA daca utilizatorul are deja o
- *   rezervare activa suprapusa in timp, la orice facilitate.
+ *   rezervare activa suprapusa in timp, la orice facilitate; 422 PREA_DEVREME
+ *   sau LIMITA_SAPTAMANALA daca incalca regula de acces a categoriei lui.
  */
 export async function createRezervare(idUtilizator, idSlot) {
   try {
     return await sequelize.transaction(async (transaction) => {
       const slot = await findSlotBlocat(idSlot, transaction);
       await assertLocDisponibil(slot, idUtilizator, transaction);
+      await assertLimiteAcces(slot, idUtilizator, transaction);
       const rezervare = await Rezervare.create(
         { id_utilizator: idUtilizator, id_slot: idSlot, cod_qr: randomUUID() },
         { transaction },
@@ -284,11 +281,6 @@ export async function createRezervare(idUtilizator, idSlot) {
       err.constraint === CONSTRANGERE_REZERVARE_SUPRAPUSA
     ) {
       throw createEroareRezervareSuprapusa();
-    }
-    // Tokenul e valid, dar contul a fost sters intre timp: id_utilizator nu
-    // mai exista, deci cererea nu mai are un utilizator autentificat.
-    if (err instanceof ForeignKeyConstraintError) {
-      throw createEroareNeautentificat();
     }
     throw err;
   }
