@@ -1,6 +1,6 @@
 // Regulile de validare pentru sloturi. Data si orele sunt in ora Romaniei, ca
 // in paginile tichetelor YT-44 si YT-46.
-import { body, query } from 'express-validator';
+import { body, param, query } from 'express-validator';
 
 import { getAziRomania } from '../../utils/ora-romania.js';
 
@@ -89,3 +89,23 @@ export const generareBodyRules = [
 ];
 
 export const listareQueryRules = [requiredData(query('data'))];
+
+// Cel mai mare id pe care il poate avea o coloana SERIAL (INTEGER) din PostgreSQL.
+const MAX_ID = 2147483647;
+
+export const idSlotParamRules = [
+  param('id_slot')
+    .isInt({ min: 1, max: MAX_ID })
+    .withMessage('Id-ul slotului trebuie sa fie un numar pozitiv.')
+    .toInt(),
+];
+
+// Ocupat nu se seteaza: se calculeaza din rezervarile active (ADR 0003).
+export const stareBodyRules = [
+  // isString inainte de isIn: altfel isIn accepta si o lista ['Mentenanta'].
+  body('stare')
+    .isString()
+    .bail()
+    .isIn(['Mentenanta', 'Liber'])
+    .withMessage('Campul stare trebuie sa fie Mentenanta sau Liber.'),
+];

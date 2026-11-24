@@ -84,10 +84,11 @@ Erorile au formatul `{ "cod": "FACILITATE_NEGASITA", "mesaj": "..." }`.
 
 ## API – Sloturi
 
-| Metodă | Rută                                        | Acces         | Răspuns                                                |
-| ------ | ------------------------------------------- | ------------- | ------------------------------------------------------ |
-| `GET`  | `/api/v1/facilitati/:id_facilitate/sloturi` | public        | `200` sloturile zilei / `400` / `404`                  |
-| `POST` | `/api/v1/facilitati/:id_facilitate/sloturi` | administrator | `201` sloturile create / `400` / `401` / `403` / `404` |
+| Metodă  | Rută                                        | Acces         | Răspuns                                                |
+| ------- | ------------------------------------------- | ------------- | ------------------------------------------------------ |
+| `GET`   | `/api/v1/facilitati/:id_facilitate/sloturi` | public        | `200` sloturile zilei / `400` / `404`                  |
+| `POST`  | `/api/v1/facilitati/:id_facilitate/sloturi` | administrator | `201` sloturile create / `400` / `401` / `403` / `404` |
+| `PATCH` | `/api/v1/sloturi/:id_slot`                  | administrator | `200` slotul / `400` / `401` / `403` / `404`           |
 
 `GET` primește ziua în query, `?data=2026-11-20` (ora României), și întoarce sloturile care încep în ziua aceea, ordonate după `ora_inceput`, și în zilele în care se schimbă ora. `locuri_libere` este capacitatea facilității minus rezervările active, niciodată sub 0; `stare` este `Mentenanta` dacă slotul e blocat, altfel `Ocupat` dacă nu mai are locuri, altfel `Liber`. Data lipsă sau invalidă primește `400 DATE_INVALIDE`, iar o facilitate inexistentă `404 FACILITATE_NEGASITA`.
 
@@ -103,6 +104,8 @@ Erorile au formatul `{ "cod": "FACILITATE_NEGASITA", "mesaj": "..." }`.
 ```
 
 Fiecare slot din răspuns are orele în ISO 8601 cu offset, de exemplu `"ora_inceput": "2026-11-20T08:00:00+02:00"`, plus `stare` și `locuri_libere`. Un slot nou are `stare: "Liber"` și toate locurile libere (`locuri_libere` este capacitatea facilității); la listarea sloturilor, ocuparea se calculează din rezervări (ADR 0003).
+
+`PATCH` primește `{ "stare": "Mentenanta" }` (blocare) sau `{ "stare": "Liber" }` (deblocare) și întoarce slotul în forma de la listare. Blocarea anulează rezervările active ale slotului, în aceeași tranzacție, iar rezervările noi primesc `409 SLOT_OCUPAT`; deblocarea nu reface rezervările anulate. Orice altă stare, inclusiv `Ocupat`, primește `400 DATE_INVALIDE`, iar un slot inexistent `404 SLOT_NEGASIT`.
 
 ## API – Reguli de acces
 

@@ -2,7 +2,11 @@
 // Erorile ajung in error-handler (Express 5 prinde erorile din async).
 import { matchedData } from 'express-validator';
 
-import { createSloturi, findSloturiZi } from './slot.service.js';
+import {
+  createSloturi,
+  findSloturiZi,
+  updateStareSlot,
+} from './slot.service.js';
 
 const HTTP_CREATED = 201;
 
@@ -26,4 +30,15 @@ export async function list(req, res) {
   const { id_facilitate: id } = matchedData(req, { locations: ['params'] });
   const { data } = matchedData(req, { locations: ['query'] });
   res.json(await findSloturiZi(id, data));
+}
+
+/**
+ * PATCH /sloturi/:id_slot
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export async function update(req, res) {
+  const { id_slot: id } = matchedData(req, { locations: ['params'] });
+  const { stare } = matchedData(req, { locations: ['body'] });
+  res.json(await updateStareSlot(id, stare));
 }

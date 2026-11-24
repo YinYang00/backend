@@ -98,7 +98,7 @@ function createEroareRezervareSuprapusa() {
  * @returns {Promise<SlotBlocat>}
  * @throws {AppError} 404 daca slotul nu exista.
  */
-async function findSlotBlocat(idSlot, transaction) {
+export async function findSlotBlocat(idSlot, transaction) {
   const [slot] = await sequelize.query(SQL_SLOT_BLOCAT, {
     type: QueryTypes.SELECT,
     replacements: { idSlot },
