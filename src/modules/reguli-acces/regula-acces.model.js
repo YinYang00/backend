@@ -2,13 +2,7 @@
 import { DataTypes } from 'sequelize';
 
 import { sequelize } from '../../config/database.js';
-
-/** Categoriile de utilizatori, in ordinea tipului categorie_utilizator. */
-export const CATEGORII_UTILIZATOR = [
-  'Student',
-  'CadruDidactic',
-  'PersonalAdministrativ',
-];
+import { CATEGORII_UTILIZATOR } from '../utilizatori/utilizator.model.js';
 
 /** Campurile unei reguli de acces care intra si ies din API. */
 export const CAMPURI_REGULA = [
