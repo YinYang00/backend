@@ -3,6 +3,13 @@ import { DataTypes } from 'sequelize';
 
 import { sequelize } from '../../config/database.js';
 
+/** Categoriile de utilizatori, in ordinea tipului categorie_utilizator. */
+export const CATEGORII_UTILIZATOR = [
+  'Student',
+  'CadruDidactic',
+  'PersonalAdministrativ',
+];
+
 export const Utilizator = sequelize.define(
   'Utilizator',
   {
@@ -25,7 +32,7 @@ export const Utilizator = sequelize.define(
       allowNull: false,
     },
     categorie: {
-      type: DataTypes.ENUM('Student', 'CadruDidactic', 'PersonalAdministrativ'),
+      type: DataTypes.ENUM(...CATEGORII_UTILIZATOR),
       allowNull: false,
     },
     rol: {

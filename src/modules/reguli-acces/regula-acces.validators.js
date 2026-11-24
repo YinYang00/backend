@@ -3,7 +3,7 @@
 // pentru ore_maxim_saptamana, ca o valoare prea mare sa dea 400, nu 500.
 import { body } from 'express-validator';
 
-import { CATEGORII_UTILIZATOR } from './regula-acces.model.js';
+import { CATEGORII_UTILIZATOR } from '../utilizatori/utilizator.model.js';
 
 const MAX_PRIORITATE = 5;
 const MAX_ZILE_AVANS = 30;
